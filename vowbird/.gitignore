@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.next/
+.expo/
+.turbo/
+*.log
+.env
+.env.local
+uploads/avatars/*
+uploads/proofs/*
+!uploads/avatars/.gitkeep
+!uploads/proofs/.gitkeep
+.DS_Store
+coverage/
+*.tsbuildinfo

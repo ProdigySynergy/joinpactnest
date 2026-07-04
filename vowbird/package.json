@@ -1,0 +1,36 @@
+{
+  "name": "vowbird",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm run --parallel dev:api dev:web",
+    "dev:web": "pnpm --filter @vowbird/web dev",
+    "dev:api": "pnpm --filter @vowbird/api dev",
+    "dev:mobile": "pnpm --filter @vowbird/mobile dev",
+    "build": "pnpm --filter @vowbird/shared build && pnpm --filter @vowbird/api build && pnpm --filter @vowbird/web build",
+    "lint": "pnpm -r lint",
+    "db:generate": "prisma generate --schema=prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema=prisma/schema.prisma",
+    "db:migrate:deploy": "prisma migrate deploy --schema=prisma/schema.prisma",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio --schema=prisma/schema.prisma",
+    "postinstall": "pnpm db:generate"
+  },
+  "devDependencies": {
+    "@prisma/client": "^5.22.0",
+    "@types/node": "^20.14.0",
+    "bcryptjs": "^2.4.3",
+    "@types/bcryptjs": "^2.4.6",
+    "dotenv": "^16.4.5",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.12.0"
+}

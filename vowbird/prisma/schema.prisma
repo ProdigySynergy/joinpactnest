@@ -1,0 +1,485 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ProfileMode {
+  VEILED
+  OPEN
+}
+
+enum Plan {
+  FREE
+  PLUS
+}
+
+enum VowCategory {
+  FITNESS
+  STUDY
+  CAREER
+  FAITH
+  MONEY
+  WELLNESS
+  CREATIVE
+  BUSINESS
+  READING
+  CUSTOM
+}
+
+enum FrequencyType {
+  DAILY
+  WEEKLY
+}
+
+enum VowStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum VowVisibility {
+  PRIVATE
+  PARTNER
+  GROUP_PUBLIC
+}
+
+enum PactPrivacy {
+  PUBLIC
+  INVITE_ONLY
+  PRIVATE
+}
+
+enum ProfileModeAllowed {
+  VEILED_ONLY
+  OPEN_ONLY
+  BOTH
+}
+
+enum PactStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum PactMemberRole {
+  OWNER
+  MODERATOR
+  MEMBER
+}
+
+enum PartnerRequestStatus {
+  WAITING
+  MATCHED
+  CANCELLED
+}
+
+enum ProfileModePreference {
+  VEILED
+  OPEN
+  EITHER
+}
+
+enum PartnerMatchStatus {
+  ACTIVE
+  ENDED
+  BLOCKED
+}
+
+enum CheckInStatus {
+  COMPLETED
+  MISSED
+}
+
+enum LetterType {
+  PARTNER_LETTER
+  FUTURE_SELF
+  GROUP_REFLECTION
+}
+
+enum LetterStatus {
+  DRAFT
+  SENT
+  SCHEDULED
+  UNLOCKED
+}
+
+enum ReactionType {
+  FIRE
+  CLAP
+  HEART
+  LOCKED_IN
+  PROUD
+  KEEP_GOING
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  ACTION_TAKEN
+  DISMISSED
+}
+
+enum PushPlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+model User {
+  id                   String       @id @default(cuid())
+  name                 String
+  username             String       @unique
+  email                String       @unique
+  passwordHash         String
+  role                 UserRole     @default(USER)
+  profileMode          ProfileMode  @default(VEILED)
+  anonymousAlias       String?
+  avatarUrl            String?
+  bio                  String?      @db.Text
+  timezone             String       @default("America/New_York")
+  preferredCheckInTime String       @default("09:00")
+  plan                 Plan         @default(FREE)
+  subscriptionStatus   String?
+  subscriptionProvider String?
+  subscriptionId       String?
+  isSuspended          Boolean      @default(false)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  vows                 Vow[]
+  ownedPacts           Pact[]              @relation("PactOwner")
+  pactMembers          PactMember[]
+  partnerRequests      PartnerRequest[]
+  matchesAsA           PartnerMatch[]      @relation("MatchUserA")
+  matchesAsB           PartnerMatch[]      @relation("MatchUserB")
+  checkIns             CheckIn[]
+  sentLetters          Letter[]            @relation("LetterSender")
+  receivedLetters      Letter[]            @relation("LetterRecipient")
+  roomPosts            RoomPost[]
+  reactions            Reaction[]
+  reportsMade          Report[]            @relation("ReportReporter")
+  reportsAgainst       Report[]            @relation("ReportReportedUser")
+  blocksMade           Block[]             @relation("BlockBlocker")
+  blocksReceived       Block[]             @relation("BlockBlocked")
+  notificationPref     NotificationPreference?
+  pushTokens           PushToken[]
+  uploadedFiles        UploadedFile[]
+  passwordResetTokens  PasswordResetToken[]
+
+  @@index([isSuspended])
+  @@index([profileMode])
+}
+
+model Vow {
+  id                 String         @id @default(cuid())
+  userId             String
+  title              String
+  reason             String?        @db.Text
+  category           VowCategory
+  frequencyType      FrequencyType
+  targetCountPerWeek Int            @default(1)
+  startDate          DateTime       @db.Date
+  endDate            DateTime?      @db.Date
+  status             VowStatus      @default(ACTIVE)
+  visibility         VowVisibility  @default(PRIVATE)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partnerRequests    PartnerRequest[]
+  partnerMatches     PartnerMatch[]
+  checkIns           CheckIn[]
+  letters            Letter[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+}
+
+model Pact {
+  id                   String             @id @default(cuid())
+  ownerId              String
+  title                String
+  slug                 String             @unique
+  description          String?            @db.Text
+  category             VowCategory
+  privacy              PactPrivacy        @default(PUBLIC)
+  profileModeAllowed   ProfileModeAllowed @default(BOTH)
+  frequencyType        FrequencyType      @default(DAILY)
+  targetCountPerWeek   Int                @default(7)
+  checkInStartTime     String             @default("06:00")
+  checkInEndTime       String             @default("23:59")
+  startDate            DateTime           @db.Date
+  endDate              DateTime?          @db.Date
+  inviteCode           String             @unique
+  status               PactStatus         @default(ACTIVE)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  owner                User               @relation("PactOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members              PactMember[]
+  checkIns             CheckIn[]
+  letters              Letter[]
+  roomPosts            RoomPost[]
+
+  @@index([ownerId])
+  @@index([privacy])
+  @@index([status])
+}
+
+model PactMember {
+  id                  String         @id @default(cuid())
+  pactId              String
+  userId              String
+  role                PactMemberRole @default(MEMBER)
+  displayModeInPact   ProfileMode    @default(VEILED)
+  joinedAt            DateTime       @default(now())
+  leftAt              DateTime?
+
+  pact                Pact           @relation(fields: [pactId], references: [id], onDelete: Cascade)
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pactId, userId])
+  @@index([userId])
+}
+
+model PartnerRequest {
+  id                    String                @id @default(cuid())
+  userId                String
+  vowId                 String
+  category              VowCategory
+  frequencyType         FrequencyType
+  timezone              String
+  preferredCheckInTime  String
+  profileModePreference ProfileModePreference @default(EITHER)
+  tonePreference        String
+  status                PartnerRequestStatus  @default(WAITING)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vow                   Vow                   @relation(fields: [vowId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+}
+
+model PartnerMatch {
+  id        String             @id @default(cuid())
+  vowId     String
+  userAId   String
+  userBId   String
+  status    PartnerMatchStatus @default(ACTIVE)
+  matchMode ProfileMode        @default(VEILED)
+  createdAt DateTime           @default(now())
+  endedAt   DateTime?
+
+  vow       Vow                @relation(fields: [vowId], references: [id], onDelete: Cascade)
+  userA     User               @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB     User               @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  letters   Letter[]
+
+  @@index([userAId])
+  @@index([userBId])
+  @@index([vowId])
+  @@index([status])
+}
+
+model CheckIn {
+  id            String        @id @default(cuid())
+  userId        String
+  vowId         String?
+  pactId        String?
+  note          String?       @db.Text
+  proofImageUrl String?
+  checkInDate   DateTime      @db.Date
+  status        CheckInStatus @default(COMPLETED)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vow           Vow?          @relation(fields: [vowId], references: [id], onDelete: Cascade)
+  pact          Pact?         @relation(fields: [pactId], references: [id], onDelete: Cascade)
+  reactions     Reaction[]
+  reports       Report[]
+
+  @@unique([userId, vowId, checkInDate])
+  @@unique([userId, pactId, checkInDate])
+  @@index([userId])
+  @@index([checkInDate])
+}
+
+model Letter {
+  id              String       @id @default(cuid())
+  senderId        String
+  recipientId     String?
+  vowId           String?
+  pactId          String?
+  partnerMatchId  String?
+  type            LetterType
+  subject         String
+  body            String       @db.Text
+  status          LetterStatus @default(DRAFT)
+  unlockAt        DateTime?
+  sentAt          DateTime?
+  readAt          DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  sender          User         @relation("LetterSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient       User?        @relation("LetterRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+  vow             Vow?         @relation(fields: [vowId], references: [id], onDelete: SetNull)
+  pact            Pact?        @relation(fields: [pactId], references: [id], onDelete: SetNull)
+  partnerMatch    PartnerMatch? @relation(fields: [partnerMatchId], references: [id], onDelete: SetNull)
+  reactions       Reaction[]
+  reports         Report[]
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([status])
+}
+
+model RoomPost {
+  id        String    @id @default(cuid())
+  pactId    String
+  userId    String
+  body      String    @db.Text
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  hiddenAt  DateTime?
+
+  pact      Pact      @relation(fields: [pactId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reactions Reaction[]
+  reports   Report[]
+
+  @@index([pactId])
+  @@index([userId])
+}
+
+model Reaction {
+  id        String       @id @default(cuid())
+  userId    String
+  checkInId String?
+  letterId  String?
+  postId    String?
+  type      ReactionType
+  createdAt DateTime     @default(now())
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkIn   CheckIn?     @relation(fields: [checkInId], references: [id], onDelete: Cascade)
+  letter    Letter?      @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  post      RoomPost?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([checkInId])
+  @@index([letterId])
+  @@index([postId])
+}
+
+model Report {
+  id              String       @id @default(cuid())
+  reporterId      String
+  reportedUserId  String?
+  postId          String?
+  checkInId       String?
+  letterId        String?
+  reason          String
+  details         String?      @db.Text
+  status          ReportStatus @default(OPEN)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  reporter        User         @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser    User?        @relation("ReportReportedUser", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  post            RoomPost?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+  checkIn         CheckIn?     @relation(fields: [checkInId], references: [id], onDelete: SetNull)
+  letter          Letter?      @relation(fields: [letterId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([reportedUserId])
+  @@index([reporterId])
+}
+
+model Block {
+  id            String   @id @default(cuid())
+  blockerId     String
+  blockedUserId String
+  reason        String?
+  createdAt     DateTime @default(now())
+
+  blocker       User     @relation("BlockBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedUser   User     @relation("BlockBlocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedUserId])
+  @@index([blockerId])
+  @@index([blockedUserId])
+}
+
+model NotificationPreference {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  checkInReminder   Boolean  @default(true)
+  partnerCheckedIn  Boolean  @default(true)
+  partnerLetter     Boolean  @default(true)
+  missedCheckIn     Boolean  @default(true)
+  pactEndingSoon    Boolean  @default(true)
+  weeklyReflection  Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PushToken {
+  id        String       @id @default(cuid())
+  userId    String
+  token     String
+  platform  PushPlatform
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, token])
+  @@index([userId])
+}
+
+model UploadedFile {
+  id        String   @id @default(cuid())
+  userId    String
+  filename  String
+  path      String
+  mimeType  String
+  size      Int
+  purpose   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

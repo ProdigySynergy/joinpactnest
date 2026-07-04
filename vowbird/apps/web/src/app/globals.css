@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy: #0f1729;
+  --navy-light: #1a2744;
+  --gold: #d4a853;
+  --gold-light: #e8c97a;
+  --cream: #f5f0e6;
+  --green: #5a8f7b;
+  --muted: #94a3b8;
+}
+
+body {
+  @apply bg-cream text-navy antialiased;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+.font-letter {
+  font-family: 'Libre Baskerville', Georgia, serif;
+}
+
+.card {
+  @apply rounded-2xl border border-navy/10 bg-white/80 p-6 shadow-sm backdrop-blur;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-xl bg-gold px-5 py-3 font-semibold text-navy transition hover:bg-gold-light;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center rounded-xl border border-navy/20 bg-white px-5 py-3 font-semibold text-navy transition hover:border-gold hover:text-gold;
+}
+
+.input {
+  @apply w-full rounded-xl border border-navy/15 bg-white px-4 py-3 outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/20;
+}
+
+.badge {
+  @apply inline-flex rounded-full bg-navy/5 px-3 py-1 text-xs font-medium uppercase tracking-wide text-navy/70;
+}
+
+.streak {
+  @apply inline-flex items-center gap-1 rounded-full bg-gold/15 px-3 py-1 text-sm font-semibold text-gold;
+}
