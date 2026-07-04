@@ -3,12 +3,16 @@ const PHONE_PATTERN = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g
 const SOCIAL_PATTERN = /@[a-zA-Z0-9_]{2,}|(?:instagram|twitter|snapchat|tiktok|facebook|telegram|whatsapp|discord)\.?\s*(?:me|com|app)?/gi;
 const ADDRESS_PATTERN = /\d+\s+[a-zA-Z0-9\s,.-]+(?:street|st|avenue|ave|road|rd|boulevard|blvd|lane|ln|drive|dr|way|court|ct|apt|suite|unit)\b/gi;
 
+function matchesPattern(pattern: RegExp, text: string): boolean {
+  return new RegExp(pattern.source, pattern.flags).test(text);
+}
+
 export function scanForContactInfo(text: string): string[] {
   const issues: string[] = [];
-  if (EMAIL_PATTERN.test(text)) issues.push("email address");
-  if (PHONE_PATTERN.test(text)) issues.push("phone number");
-  if (SOCIAL_PATTERN.test(text)) issues.push("social handle");
-  if (ADDRESS_PATTERN.test(text)) issues.push("physical address");
+  if (matchesPattern(EMAIL_PATTERN, text)) issues.push("email address");
+  if (matchesPattern(PHONE_PATTERN, text)) issues.push("phone number");
+  if (matchesPattern(SOCIAL_PATTERN, text)) issues.push("social handle");
+  if (matchesPattern(ADDRESS_PATTERN, text)) issues.push("physical address");
   return issues;
 }
 

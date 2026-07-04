@@ -33,34 +33,74 @@ vowbird/
 ## Prerequisites
 
 - Node.js 20+
-- pnpm 9+
-- Docker (for local MySQL) or MySQL 8 installed locally
+- pnpm 9+ (or use `npx pnpm@9.12.0` on Windows)
+- Docker Desktop (for local MySQL) or MySQL 8 installed locally
 
 ## Quick start
 
+### macOS / Linux
+
 ```bash
 cd joinpactnest/vowbird
-
-# Copy environment file
 cp .env.example .env
-
-# Start MySQL
 docker compose up -d mysql
-
-# Install dependencies
 pnpm install
-
-# Run migrations & seed
-pnpm db:migrate
+pnpm db:migrate:deploy
 pnpm db:seed
-
-# Start API + web
 pnpm dev
 ```
+
+### Windows (PowerShell)
+
+**Option A — Local MySQL (no Docker)** — use this if you already have MySQL installed:
+
+```powershell
+cd joinpactnest\vowbird
+Copy-Item .env.example .env
+
+# 1. Open MySQL Workbench (or HeidiSQL, etc.)
+# 2. Run scripts/setup-mysql-local.sql as root
+# 3. Then continue:
+
+npx pnpm@9.12.0 install
+npx pnpm@9.12.0 db:migrate:deploy
+npx pnpm@9.12.0 db:seed
+npx pnpm@9.12.0 dev
+```
+
+**Option B — Docker MySQL** — requires Docker Desktop to be running:
+
+```powershell
+cd joinpactnest\vowbird
+Copy-Item .env.example .env
+docker compose up -d mysql
+npx pnpm@9.12.0 install
+npx pnpm@9.12.0 db:migrate:deploy
+npx pnpm@9.12.0 db:seed
+npx pnpm@9.12.0 dev
+```
+
+#### Docker error: `docker_engine ... cannot find the file specified`
+
+Docker Desktop is not running. Either:
+
+1. **Start Docker Desktop** from the Start menu, wait until it says "Running", then retry `docker compose up -d mysql`, or
+2. **Skip Docker** and use local MySQL (Option A above). Your machine already has a `mysql` Windows service — you don't need Docker for development.
+
+### URLs
 
 - Web: http://localhost:3000
 - API: http://localhost:4000
 - Health: http://localhost:4000/health
+
+### Run individual apps
+
+| App | Command | README |
+|-----|---------|--------|
+| API only | `pnpm dev:api` | [apps/api/README.md](apps/api/README.md) |
+| Web only | `pnpm dev:web` | [apps/web/README.md](apps/web/README.md) |
+| Mobile | `pnpm dev:mobile` | [apps/mobile/README.md](apps/mobile/README.md) |
+| Shared lib | `pnpm --filter @vowbird/shared build` | [packages/shared/README.md](packages/shared/README.md) |
 
 ### Mobile
 
@@ -93,7 +133,20 @@ For EAS builds, see `docs/DEPLOYMENT.md`.
 | `pnpm dev:api` | Fastify API only |
 | `pnpm dev:mobile` | Expo dev server |
 | `pnpm build` | Production build (shared + api + web) |
+| `pnpm test` | Run all test suites |
+| `pnpm test:watch` | Run tests in watch mode |
+| `pnpm test:coverage` | Run tests with coverage reports |
 | `pnpm lint` | Typecheck all packages |
+
+## Testing
+
+Vitest is configured for shared, API, web, and mobile packages. Tests run **without MySQL** (API uses mocked Prisma where needed).
+
+```bash
+pnpm test
+```
+
+See [docs/TESTING.md](docs/TESTING.md) for package-level commands and how to add tests.
 
 ## Features
 
