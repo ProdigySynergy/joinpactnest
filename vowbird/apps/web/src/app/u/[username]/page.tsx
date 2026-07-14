@@ -222,7 +222,7 @@ export default function UserProfilePage() {
                 <ul className="mt-4 space-y-3">
                   {data.stats.activeVowProgress.map((v) => (
                     <li key={v.vowId} className="flex items-center justify-between gap-3 text-sm">
-                      {data.isSelf || data.profile.profileMode === "OPEN" ? (
+                      {data.isSelf ? (
                         <Link href={`/vows/${v.vowId}`} className="font-medium text-navy hover:text-gold">
                           {v.title}
                         </Link>

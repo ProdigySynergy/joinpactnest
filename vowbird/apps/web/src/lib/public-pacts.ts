@@ -60,11 +60,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export async function fetchPublicPact(slug: string): Promise<PublicPactProfile | null> {
   const res = await fetch(`${API_URL}/public/pacts/${encodeURIComponent(slug)}`, {
-    next: { revalidate: 60 },
+    // Avoid serving a stale incomplete payload after API shape changes in local/dev.
+    cache: "no-store",
   });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error("Failed to load public pact");
-  return res.json();
+  const data = (await res.json()) as PublicPactProfile;
+  if (!data?.pact?.id || !data?.owner?.id) return null;
+  return data;
 }
 
 export async function fetchPublicPactList(): Promise<PublicPactListItem[]> {

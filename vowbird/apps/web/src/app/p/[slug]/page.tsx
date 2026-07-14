@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PublicPactPage({ params }: Props) {
   const data = await fetchPublicPact(params.slug);
-  if (!data) notFound();
+  if (!data?.pact || !data?.owner) notFound();
 
   const { pact, stats, leaders, owner } = data;
   const shareUrl = publicPactShareUrl(pact.slug);

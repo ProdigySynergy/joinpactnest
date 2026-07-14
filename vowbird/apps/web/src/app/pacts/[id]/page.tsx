@@ -107,7 +107,11 @@ export default function PactDetailPage() {
   }
 
   const pact = data?.pact;
-  const isOwner = pact && user?.id === pact.ownerId;
+  const isOwner = Boolean(pact && user?.id === pact.ownerId);
+  const isMember = Boolean(
+    pact && user && pact.members.some((m) => m.user.id === user.id)
+  );
+  const canJoin = Boolean(pact && user && !isOwner && !isMember);
 
   return (
     <RequireAuth>
@@ -122,6 +126,11 @@ export default function PactDetailPage() {
               )}
               <h1 className="mt-2 text-3xl font-bold">{pact.title}</h1>
               {pact.description && <p className="mt-2 text-navy/70">{pact.description}</p>}
+              {(isOwner || isMember) && (
+                <p className="mt-2 text-sm text-navy/50">
+                  {isOwner ? "You’re the creator of this pact." : "You’re in this pact."}
+                </p>
+              )}
               {pact.privacy === "PUBLIC" && (
                 <p className="mt-2 text-sm">
                   <Link href={`/p/${pact.slug}`} className="text-gold hover:underline">
@@ -141,22 +150,35 @@ export default function PactDetailPage() {
               />
             </div>
 
-            <div className="mb-6 flex flex-wrap gap-3">
-              <button onClick={joinPact} className="btn-primary">
-                Join pact
-              </button>
-              <form onSubmit={joinByCode} className="flex gap-2">
-                <input
-                  className="input py-2"
-                  placeholder="Invite code"
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value)}
-                />
-                <button type="submit" className="btn-secondary">
-                  Join by code
-                </button>
-              </form>
-            </div>
+            {canJoin && (
+              <div className="mb-6 flex flex-wrap gap-3">
+                {pact.privacy !== "PRIVATE" && (
+                  <button onClick={joinPact} className="btn-primary">
+                    Join pact
+                  </button>
+                )}
+                {pact.privacy === "PRIVATE" && (
+                  <form onSubmit={joinByCode} className="flex flex-wrap gap-2">
+                    <input
+                      className="input py-2"
+                      placeholder="Invite code"
+                      value={inviteCode}
+                      onChange={(e) => setInviteCode(e.target.value)}
+                    />
+                    <button type="submit" className="btn-secondary">
+                      Join with invite code
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {isOwner && (pact.privacy === "PRIVATE" || pact.privacy === "INVITE_ONLY") && (
+              <div className="card mb-6">
+                <p className="text-sm text-navy/60">Invite code (share with people you trust)</p>
+                <p className="mt-1 font-mono text-lg font-semibold tracking-wide">{pact.inviteCode}</p>
+              </div>
+            )}
 
             {isOwner && (
               <div className="card mb-6 flex flex-wrap gap-6">
