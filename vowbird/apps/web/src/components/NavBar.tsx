@@ -42,7 +42,12 @@ export function NavBar() {
           )}
         </nav>
         <div className="flex items-center gap-3">
-          <span className="hidden text-sm text-cream/70 sm:inline">{user.displayName}</span>
+          <Link
+            href={`/u/${user.username}`}
+            className="hidden text-sm text-cream/70 hover:text-gold sm:inline"
+          >
+            {user.displayName}
+          </Link>
           <button onClick={logout} className="text-sm text-cream/70 hover:text-gold">
             Log out
           </button>

@@ -17,6 +17,12 @@ enum ProfileMode {
   OPEN
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  FLUID
+}
+
 enum Plan {
   FREE
   PLUS
@@ -164,6 +170,8 @@ model User {
   anonymousAlias       String?
   avatarUrl            String?
   bio                  String?      @db.Text
+  tagline              String?
+  gender               Gender?
   timezone             String       @default("America/New_York")
   preferredCheckInTime String       @default("09:00")
   plan                 Plan         @default(FREE)

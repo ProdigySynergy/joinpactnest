@@ -25,6 +25,8 @@ export const loginSchema = z.object({
 export const updateProfileSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   bio: z.string().max(500).optional(),
+  tagline: z.string().max(120).optional().nullable(),
+  gender: z.enum(["MALE", "FEMALE", "FLUID"]).optional().nullable(),
   timezone: z.string().optional(),
   preferredCheckInTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   anonymousAlias: z.string().min(2).max(50).optional(),

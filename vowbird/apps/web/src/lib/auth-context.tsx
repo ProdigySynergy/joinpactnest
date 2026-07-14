@@ -14,6 +14,8 @@ interface User {
   anonymousAlias: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  tagline: string | null;
+  gender: "MALE" | "FEMALE" | "FLUID" | null;
   timezone: string;
   preferredCheckInTime: string;
   plan: string;

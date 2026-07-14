@@ -66,8 +66,13 @@ export const ENCOURAGEMENT_LABELS: Record<(typeof ENCOURAGEMENT_STICKERS)[number
   ROOTING_FOR_YOU: "Rooting for you",
 };
 
-/** Soft daily cap for freeform mood updates. */
-export const MAX_MOOD_UPDATES_PER_DAY = 8;
+export const GENDER_OPTIONS = ["MALE", "FEMALE", "FLUID"] as const;
+
+export const GENDER_LABELS: Record<(typeof GENDER_OPTIONS)[number], string> = {
+  MALE: "Male",
+  FEMALE: "Female",
+  FLUID: "Fluid",
+};
 
 /** Minimum time between mood shares (any context). */
 export const MOOD_UPDATE_COOLDOWN_HOURS = 4;

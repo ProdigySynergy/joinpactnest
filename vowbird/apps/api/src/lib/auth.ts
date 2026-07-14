@@ -9,7 +9,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 }
 
-export function sanitizeUser(user: {
+type SanitizableUser = {
   id: string;
   name: string;
   username: string;
@@ -19,12 +19,16 @@ export function sanitizeUser(user: {
   anonymousAlias: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  tagline: string | null;
+  gender: string | null;
   timezone: string;
   preferredCheckInTime: string;
   plan: string;
   isSuspended: boolean;
   createdAt: Date;
-}) {
+};
+
+export function sanitizeUser(user: SanitizableUser) {
   return {
     id: user.id,
     name: user.name,
@@ -35,6 +39,8 @@ export function sanitizeUser(user: {
     anonymousAlias: user.anonymousAlias,
     avatarUrl: user.avatarUrl,
     bio: user.bio,
+    tagline: user.tagline,
+    gender: user.gender,
     timezone: user.timezone,
     preferredCheckInTime: user.preferredCheckInTime,
     plan: user.plan,
@@ -44,27 +50,57 @@ export function sanitizeUser(user: {
   };
 }
 
-export function sanitizeUserForOthers(
-  user: {
-    id: string;
-    name: string;
-    username: string;
-    profileMode: string;
-    anonymousAlias: string | null;
-    avatarUrl: string | null;
-    bio: string | null;
-    timezone: string;
-  },
-  viewerProfileMode?: string
-) {
+export function sanitizeUserForOthers(user: {
+  id: string;
+  name: string;
+  username: string;
+  profileMode: string;
+  anonymousAlias: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+  tagline?: string | null;
+  gender?: string | null;
+  timezone: string;
+}) {
   const isVeiled = user.profileMode === "VEILED";
   return {
     id: user.id,
-    username: isVeiled ? user.username : user.username,
+    username: user.username,
     profileMode: user.profileMode,
     displayName: formatDisplayName(user),
     avatarUrl: isVeiled ? null : user.avatarUrl,
     bio: isVeiled ? null : user.bio,
+    tagline: isVeiled ? null : user.tagline ?? null,
+    gender: isVeiled ? null : user.gender ?? null,
     timezone: user.timezone,
+  };
+}
+
+/** Public profile card — respects Veiled mode privacy. */
+export function sanitizePublicProfile(user: {
+  id: string;
+  name: string;
+  username: string;
+  profileMode: string;
+  anonymousAlias: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+  tagline: string | null;
+  gender: string | null;
+  timezone: string;
+  createdAt: Date;
+}) {
+  const isVeiled = user.profileMode === "VEILED";
+  return {
+    id: user.id,
+    username: user.username,
+    profileMode: user.profileMode,
+    displayName: formatDisplayName(user),
+    avatarUrl: isVeiled ? null : user.avatarUrl,
+    bio: isVeiled ? null : user.bio,
+    tagline: isVeiled ? null : user.tagline,
+    gender: isVeiled ? null : user.gender,
+    timezone: user.timezone,
+    memberSince: user.createdAt,
   };
 }

@@ -1,9 +1,51 @@
 import { FastifyInstance } from "fastify";
 import { profileModeSchema, updateProfileSchema, zodErrorToMessage } from "@vowbird/shared";
-import { sanitizeUser } from "../lib/auth";
+import { sanitizePublicProfile, sanitizeUser } from "../lib/auth";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
+import { getUserOverallProgress } from "../services/progress";
 import { saveUpload } from "../services/upload";
+
+async function buildProfileStats(userId: string) {
+  const [activeVows, completedVows, activePacts, activeMatches, totalCheckIns, vowProgress] =
+    await Promise.all([
+      prisma.vow.count({ where: { userId, status: "ACTIVE" } }),
+      prisma.vow.count({ where: { userId, status: "COMPLETED" } }),
+      prisma.pactMember.count({ where: { userId, leftAt: null } }),
+      prisma.partnerMatch.count({
+        where: {
+          status: "ACTIVE",
+          OR: [{ userAId: userId }, { userBId: userId }],
+        },
+      }),
+      prisma.checkIn.count({ where: { userId, status: "COMPLETED" } }),
+      getUserOverallProgress(userId),
+    ]);
+
+  const bestStreak = vowProgress.reduce((max, v) => Math.max(max, v.currentStreak, v.longestStreak), 0);
+  const avgWeeklyCompletion =
+    vowProgress.length === 0
+      ? 0
+      : Math.round(
+          vowProgress.reduce((sum, v) => sum + v.completionPercentage, 0) / vowProgress.length
+        );
+
+  return {
+    activeVows,
+    completedVows,
+    activePacts,
+    activeMatches,
+    totalCheckIns,
+    bestStreak,
+    avgWeeklyCompletion,
+    activeVowProgress: vowProgress.slice(0, 5).map((v) => ({
+      vowId: v.vowId,
+      title: v.title,
+      currentStreak: v.currentStreak,
+      completionPercentage: v.completionPercentage,
+    })),
+  };
+}
 
 export async function userRoutes(app: FastifyInstance) {
   app.get("/users/me", { preHandler: authenticate }, async (request) => {
@@ -63,5 +105,36 @@ export async function userRoutes(app: FastifyInstance) {
     } catch (e) {
       return reply.status(400).send({ error: (e as Error).message });
     }
+  });
+
+  app.get("/users/:username/profile", { preHandler: authenticate }, async (request, reply) => {
+    const { username } = request.params as { username: string };
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user || user.isSuspended) {
+      return reply.status(404).send({ error: "Profile not found" });
+    }
+
+    const stats = await buildProfileStats(user.id);
+    const isSelf = user.id === request.userId;
+
+    // Veiled users: still show anonymized profile + aggregate stats (no vow titles if veiled? 
+    // Show aggregates always; hide detailed vow titles for veiled when viewer is not self)
+    const profile = sanitizePublicProfile(user);
+    const publicStats =
+      user.profileMode === "VEILED" && !isSelf
+        ? {
+            ...stats,
+            activeVowProgress: stats.activeVowProgress.map((v) => ({
+              ...v,
+              title: "Active vow",
+            })),
+          }
+        : stats;
+
+    return {
+      profile,
+      stats: publicStats,
+      isSelf,
+    };
   });
 }

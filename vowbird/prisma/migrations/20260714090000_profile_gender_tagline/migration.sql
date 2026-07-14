@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `User` ADD COLUMN `tagline` VARCHAR(191) NULL,
+    ADD COLUMN `gender` ENUM('MALE', 'FEMALE', 'FLUID') NULL;

@@ -162,6 +162,7 @@ See [docs/TESTING.md](docs/TESTING.md) for package-level commands and how to add
 
 - **Veiled Mode** — Anonymous accountability with generated aliases
 - **Open Mode** — Visible profiles, avatars, public pacts
+- **Profiles** — `/u/[username]` with progress, pact/match counts; optional gender (male/female/fluid) + tagline
 - **Vows** — Personal commitments with daily/weekly check-ins
 - **Partner matching** — Goal-based matching (not swiping)
 - **Letters** — Partner letters, future-self, group reflections
@@ -183,6 +184,7 @@ Auth uses JWT Bearer tokens. All protected routes require `Authorization: Bearer
 See the product spec for the full endpoint list. Key routes:
 
 - `POST /auth/register`, `POST /auth/login`
+- `GET/PATCH /users/me`, `GET /users/:username/profile`
 - `GET/POST /vows`, `POST /check-ins`
 - `POST /moods`, `GET /moods?vowId|pactId|partnerMatchId=`, `POST /encouragements`
 - `POST /partner-requests`, `GET /matches/me`
