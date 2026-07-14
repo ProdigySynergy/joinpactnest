@@ -21,9 +21,11 @@ export default function RootLayout() {
           <Stack.Screen name="matches/[id]" options={{ headerShown: true, title: "Partner" }} />
           <Stack.Screen name="letters/new" options={{ headerShown: true, title: "Write Letter" }} />
           <Stack.Screen name="letters/[id]" options={{ headerShown: true, title: "Letter" }} />
+          <Stack.Screen name="pacts/new" options={{ headerShown: true, title: "Create Pact" }} />
           <Stack.Screen name="pacts/[id]" options={{ headerShown: true, title: "Pact" }} />
           <Stack.Screen name="pacts/discover" options={{ headerShown: true, title: "Discover" }} />
           <Stack.Screen name="pacts/feed" options={{ headerShown: true, title: "Room Feed" }} />
+          <Stack.Screen name="settings" options={{ headerShown: true, title: "Settings" }} />
           <Stack.Screen name="report" options={{ headerShown: true, title: "Report & Block" }} />
         </Stack>
       </AuthProvider>

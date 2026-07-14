@@ -42,7 +42,16 @@ export default function VowDetailScreen() {
       <TouchableOpacity style={styles.btnPrimary} onPress={checkIn}>
         <Text style={styles.btnPrimaryText}>Check in</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.btnSecondary} onPress={() => router.push("/letters/new")}>
+      <TouchableOpacity
+        style={styles.btnSecondary}
+        onPress={() => router.push(`/(tabs)/matches?vowId=${id}`)}
+      >
+        <Text style={styles.btnSecondaryText}>Find partner</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.btnSecondary}
+        onPress={() => router.push(`/letters/new?vowId=${id}&type=FUTURE_SELF`)}
+      >
         <Text style={styles.btnSecondaryText}>Write letter</Text>
       </TouchableOpacity>
     </ScrollView>

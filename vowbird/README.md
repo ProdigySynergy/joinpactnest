@@ -171,6 +171,7 @@ See [docs/TESTING.md](docs/TESTING.md) for package-level commands and how to add
 - **Partner matching** — Auto-queue + discover/direct invites; **one active partner per vow** (free plan also caps 1 match account-wide)
 - **Letters** — Partner letters, future-self, group reflections
 - **Pacts** — Public, invite-only, and private circles
+- **Mobile (Expo)** — Auth, vows, check-ins (photo), partner discover/incoming, letters (typed), create/join pacts + invite codes, settings; EAS for store builds (see Mobile section below)
 - **Public pact pages** — Shareable `/p/[slug]` profiles (SEO + social), explore hub at `/explore`
 - **Mood check** — Freeform mood updates (4h cooldown · soft 8/day cap); partners send one-tap cheer chips
 - **No judgement zone** — Soft misses vs call-outs. Toggle on **pacts** (create/settings); shown on public `/p/[slug]` + explore when on. For partner vows, toggle lives on the **match** page.
@@ -252,6 +253,18 @@ Before your first EAS build, add app icons to `apps/mobile/assets/`:
 - `adaptive-icon.png`
 
 Or run `npx expo prebuild` to generate defaults.
+
+### Mobile P0 (parity shipped)
+
+| Screen | Path |
+|--------|------|
+| Create pact | `/pacts/new` |
+| Partner discover + incoming | Partners tab |
+| Settings | `/settings` (from Profile) |
+| Join by invite code | Pacts tab + pact detail |
+| Letter targeting | Type picker; match → partner letter query params |
+
+Dev: set `EXPO_PUBLIC_API_URL` to your LAN IP (not `localhost`) when using a physical device. Store builds: see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) § Mobile EAS — Android `preview` = APK, `production` = AAB; iOS needs a Mac or EAS Submit.
 
 ## License
 

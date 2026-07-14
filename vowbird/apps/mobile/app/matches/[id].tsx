@@ -8,7 +8,14 @@ export default function MatchDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data } = useQuery({
     queryKey: ["match", id],
-    queryFn: () => api<{ match: { partner: { displayName: string; id: string }; vow: { title: string }; matchMode: string } }>(`/matches/${id}`),
+    queryFn: () =>
+      api<{
+        match: {
+          partner: { displayName: string; id: string };
+          vow: { id: string; title: string };
+          matchMode: string;
+        };
+      }>(`/matches/${id}`),
   });
 
   async function endMatch() {
@@ -24,8 +31,15 @@ export default function MatchDetailScreen() {
         <>
           <Text style={styles.title}>{match.partner.displayName}</Text>
           <Text style={styles.subtitle}>{match.matchMode} match · {match.vow.title}</Text>
-          <TouchableOpacity style={styles.btnPrimary} onPress={() => router.push("/letters/new")}>
-            <Text style={styles.btnPrimaryText}>Write letter</Text>
+          <TouchableOpacity
+            style={styles.btnPrimary}
+            onPress={() =>
+              router.push(
+                `/letters/new?partnerMatchId=${id}&recipientId=${match.partner.id}&vowId=${match.vow.id}&type=PARTNER_LETTER`
+              )
+            }
+          >
+            <Text style={styles.btnPrimaryText}>Write partner letter</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.btnSecondary} onPress={() => router.push(`/report?userId=${match.partner.id}`)}>
             <Text style={styles.btnSecondaryText}>Report / block</Text>

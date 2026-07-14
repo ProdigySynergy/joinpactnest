@@ -3,9 +3,17 @@ import { api, clearToken, getToken, setToken } from "./api";
 
 interface User {
   id: string;
+  name?: string;
+  username?: string;
   displayName: string;
   email: string;
   profileMode: string;
+  anonymousAlias?: string | null;
+  bio?: string | null;
+  tagline?: string | null;
+  gender?: string | null;
+  timezone?: string;
+  preferredCheckInTime?: string;
   role: string;
 }
 
