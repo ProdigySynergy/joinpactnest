@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity } from "react-native";
+import { Alert, ScrollView, Share, Text, TextInput, TouchableOpacity } from "react-native";
 import { MoodFeed } from "../../components/MoodFeed";
 import { useAuth } from "../../lib/auth-context";
 import { api } from "../../lib/api";
+import { publicPactAppUrl, publicPactWebUrl } from "../../lib/share";
 import { colors, styles } from "../../lib/theme";
 
 export default function PactDetailScreen() {
@@ -23,6 +24,7 @@ export default function PactDetailScreen() {
           description: string | null;
           inviteCode: string;
           privacy: string;
+          slug?: string;
           ownerId: string;
           members: Array<{ user: { id: string; displayName: string } }>;
         };
@@ -70,12 +72,35 @@ export default function PactDetailScreen() {
     router.push(`/pacts/feed?pactId=${id}`);
   }
 
+  async function sharePublic() {
+    if (!pact?.slug || pact.privacy !== "PUBLIC") return;
+    const web = publicPactWebUrl(pact.slug);
+    await Share.share({
+      message: `${pact.title} on Vowbird\n${web}\n\nOpen in app: ${publicPactAppUrl(pact.slug)}`,
+      title: pact.title,
+      url: web,
+    });
+  }
+
   return (
     <ScrollView style={styles.screen} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>{pact?.title}</Text>
       {pact?.description ? <Text style={styles.subtitle}>{pact.description}</Text> : null}
       {pact?.privacy ? (
         <Text style={[styles.badge, { marginBottom: 12 }]}>{pact.privacy}</Text>
+      ) : null}
+      {pact?.privacy === "PUBLIC" && pact.slug ? (
+        <>
+          <TouchableOpacity style={styles.btnSecondary} onPress={sharePublic}>
+            <Text style={styles.btnSecondaryText}>Share public page</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.btnSecondary}
+            onPress={() => router.push(`/p/${pact.slug}`)}
+          >
+            <Text style={styles.btnSecondaryText}>View public page</Text>
+          </TouchableOpacity>
+        </>
       ) : null}
 
       {canJoin && pact?.privacy === "PUBLIC" && (

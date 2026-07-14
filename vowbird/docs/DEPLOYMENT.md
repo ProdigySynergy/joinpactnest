@@ -85,6 +85,16 @@ eas build --platform ios --profile preview
 ```
 
 Set `EXPO_PUBLIC_API_URL=https://api.vowbird.app` in EAS secrets or `.env`.
+Optional: `EXPO_PUBLIC_SITE_URL=https://vowbird.app` for share links.
+
+### Deep links
+
+- Custom scheme: `vowbird://p/{slug}`, `vowbird://u/{username}` (works without store config).
+- HTTPS App Links / Universal Links for `https://vowbird.app/p/*` and `/u/*` are declared in `apps/mobile/app.json`.
+- Before store release, host:
+  - `https://vowbird.app/.well-known/apple-app-site-association`
+  - `https://vowbird.app/.well-known/assetlinks.json`
+  for team ID / SHA-256 fingerprints from EAS / Play Console.
 
 ## Environment variables (production)
 

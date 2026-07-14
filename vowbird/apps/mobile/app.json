@@ -15,14 +15,44 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.vowbird.mobile"
+      "bundleIdentifier": "app.vowbird.mobile",
+      "associatedDomains": ["applinks:vowbird.app", "applinks:www.vowbird.app"]
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0f1729"
       },
-      "package": "app.vowbird.mobile"
+      "package": "app.vowbird.mobile",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "vowbird.app",
+              "pathPrefix": "/p"
+            },
+            {
+              "scheme": "https",
+              "host": "vowbird.app",
+              "pathPrefix": "/u"
+            },
+            {
+              "scheme": "https",
+              "host": "www.vowbird.app",
+              "pathPrefix": "/p"
+            },
+            {
+              "scheme": "https",
+              "host": "www.vowbird.app",
+              "pathPrefix": "/u"
+            }
+          ]
+        }
+      ]
     },
     "plugins": [
       "expo-router",

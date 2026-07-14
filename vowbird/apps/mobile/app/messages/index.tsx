@@ -2,12 +2,13 @@ import * as Clipboard from "expo-clipboard";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, Share, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
 import {
   decryptFromSender,
   exportLocalE2eBackup,
+  hasLocalE2eKey,
   importLocalE2eBackup,
 } from "../../lib/e2e";
 import { colors, styles } from "../../lib/theme";
@@ -29,10 +30,22 @@ export default function MessagesScreen() {
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [backupJson, setBackupJson] = useState("");
   const [backupMsg, setBackupMsg] = useState("");
+  const [backupOpen, setBackupOpen] = useState(false);
+  const [hasKey, setHasKey] = useState<boolean | null>(null);
 
   const { data } = useQuery({
     queryKey: ["dm-conversations"],
     queryFn: () => api<{ conversations: Conversation[] }>("/messages/conversations"),
+  });
+
+  useQuery({
+    queryKey: ["e2e-has-key", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const ok = await hasLocalE2eKey(user!.id);
+      setHasKey(ok);
+      return ok;
+    },
   });
 
   const peerIds = useMemo(
@@ -73,11 +86,47 @@ export default function MessagesScreen() {
     if (!user) return;
     const raw = await exportLocalE2eBackup(user.id);
     if (!raw) {
-      setBackupMsg("No local key to export yet.");
+      setBackupMsg("No local key to export yet. Open Messages once online so a key can be created.");
       return;
     }
     await Clipboard.setStringAsync(raw);
-    setBackupMsg("Backup copied. Keep it private — it unlocks your message history.");
+    setBackupMsg("Backup copied. Store it somewhere private (password manager or encrypted note).");
+  }
+
+  async function shareBackup() {
+    if (!user) return;
+    const raw = await exportLocalE2eBackup(user.id);
+    if (!raw) {
+      setBackupMsg("No local key to export yet.");
+      return;
+    }
+    await Share.share({
+      message: raw,
+      title: "Vowbird E2E key backup",
+    });
+    setBackupMsg("Share sheet opened. Only send this to yourself on a device you trust.");
+  }
+
+  async function pasteFromClipboard() {
+    const text = await Clipboard.getStringAsync();
+    if (!text.trim()) {
+      setBackupMsg("Clipboard is empty.");
+      return;
+    }
+    setBackupJson(text.trim());
+    setBackupMsg("Pasted from clipboard. Review, then restore.");
+  }
+
+  function confirmRestore() {
+    if (!user || !backupJson.trim()) return;
+    Alert.alert(
+      "Replace device key?",
+      "Restoring overwrites the key on this device. You won’t decrypt messages sealed with the previous local key.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Restore", style: "destructive", onPress: restoreBackup },
+      ]
+    );
   }
 
   async function restoreBackup() {
@@ -86,6 +135,7 @@ export default function MessagesScreen() {
       await importLocalE2eBackup(user.id, backupJson.trim());
       const parsed = JSON.parse(backupJson.trim()) as { publicKey: string };
       await api("/e2e/keys", { method: "PUT", body: JSON.stringify({ publicKey: parsed.publicKey }) });
+      setHasKey(true);
       setBackupMsg("Key backup restored. Re-open threads if decrypt failed earlier.");
       setBackupJson("");
     } catch (err) {
@@ -100,28 +150,53 @@ export default function MessagesScreen() {
         End-to-end encrypted when both of you have keys. Otherwise you’ll see a clear notice.
       </Text>
 
-      <View style={styles.card}>
-        <Text style={{ fontWeight: "700", color: colors.navy, marginBottom: 8 }}>Device key backup</Text>
-        <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 12 }}>
-          If you lose this device without a backup, old encrypted messages cannot be decrypted.
+      <TouchableOpacity style={styles.card} onPress={() => setBackupOpen((o) => !o)}>
+        <Text style={{ fontWeight: "700", color: colors.navy }}>
+          Device key backup {backupOpen ? "▾" : "▸"}
         </Text>
-        <TouchableOpacity style={styles.btnSecondary} onPress={copyBackup}>
-          <Text style={styles.btnSecondaryText}>Copy key backup</Text>
-        </TouchableOpacity>
-        <TextInput
-          style={[styles.input, { minHeight: 80, textAlignVertical: "top", marginTop: 12 }]}
-          placeholder="Paste backup JSON to restore"
-          multiline
-          value={backupJson}
-          onChangeText={setBackupJson}
-        />
-        <TouchableOpacity style={styles.btnPrimary} onPress={restoreBackup}>
-          <Text style={styles.btnPrimaryText}>Restore backup</Text>
-        </TouchableOpacity>
-        {backupMsg ? (
-          <Text style={{ color: colors.sage, marginTop: 8, fontSize: 13 }}>{backupMsg}</Text>
-        ) : null}
-      </View>
+        <Text style={{ color: colors.muted, fontSize: 13, marginTop: 4 }}>
+          {hasKey === false
+            ? "No local key yet — it’ll be created automatically."
+            : "Back up so you can read history after switching devices."}
+        </Text>
+      </TouchableOpacity>
+
+      {backupOpen && (
+        <View style={styles.card}>
+          <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 12 }}>
+            This file unlocks your encrypted history. Never post it publicly. Prefer a password
+            manager over chat apps.
+          </Text>
+          <TouchableOpacity style={styles.btnSecondary} onPress={copyBackup}>
+            <Text style={styles.btnSecondaryText}>Copy backup</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.btnSecondary} onPress={shareBackup}>
+            <Text style={styles.btnSecondaryText}>Share backup…</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.btnSecondary} onPress={pasteFromClipboard}>
+            <Text style={styles.btnSecondaryText}>Paste from clipboard</Text>
+          </TouchableOpacity>
+          <TextInput
+            style={[styles.input, { minHeight: 80, textAlignVertical: "top", marginTop: 12 }]}
+            placeholder="Backup JSON"
+            multiline
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={backupJson}
+            onChangeText={setBackupJson}
+          />
+          <TouchableOpacity
+            style={[styles.btnPrimary, { opacity: !backupJson.trim() ? 0.5 : 1 }]}
+            disabled={!backupJson.trim()}
+            onPress={confirmRestore}
+          >
+            <Text style={styles.btnPrimaryText}>Restore backup</Text>
+          </TouchableOpacity>
+          {backupMsg ? (
+            <Text style={{ color: colors.sage, marginTop: 8, fontSize: 13 }}>{backupMsg}</Text>
+          ) : null}
+        </View>
+      )}
 
       <Text style={{ fontWeight: "700", marginTop: 8, marginBottom: 8, color: colors.navy }}>
         Conversations

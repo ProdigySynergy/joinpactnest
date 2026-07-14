@@ -262,16 +262,21 @@ Or run `npx expo prebuild` to generate defaults.
 | Partner discover + incoming | Partners tab |
 | Settings | `/settings` |
 | Letter targeting | `/letters/new` |
-| Messages + E2E | `/messages`, `/messages/[userId]` (keys in SecureStore; copy/restore backup) |
+| Messages + E2E | `/messages`, `/messages/[userId]` (keys in SecureStore; copy/share/paste restore) |
 | Profiles | `/u/[username]` |
 | Pacters | `/pacters` |
 | Mood feed | Vow / match / pact detail |
 | Safety | `/report` (open report + follow-ups, self-guard) |
 | Vow depth | History, MISSED, category/frequency on create |
+| Explore | `/pacts/discover` — search + category filters via `/public/pacts` |
+| Public pact | `/p/[slug]` — join, share, leaders, recent posts |
+| Deep links | `vowbird://p/…`, `vowbird://u/…`; HTTPS `vowbird.app/p|u` (App Links / Universal Links in `app.json`) |
 
-Dev: set `EXPO_PUBLIC_API_URL` to your LAN IP (not `localhost`) when using a physical device. Store builds: see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) § Mobile EAS — Android `preview` = APK, `production` = AAB; iOS needs a Mac or EAS Submit.
+Dev: set `EXPO_PUBLIC_API_URL` to your LAN IP (not `localhost`) when using a physical device. Optional `EXPO_PUBLIC_SITE_URL` for share links (default `https://vowbird.app`). Store builds: see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) § Mobile EAS — Android `preview` = APK, `production` = AAB; iOS needs a Mac or EAS Submit.
 
 E2E on mobile uses `@noble/curves` + `@noble/ciphers` with the same SPKI/PKCS8 + AES-GCM wire format as web Web Crypto, so web↔mobile decrypt works when both parties have keys.
+
+**Universal / App Links:** production needs `apple-app-site-association` and Android Digital Asset Links on `vowbird.app` pointing at `app.vowbird.mobile`. Custom scheme `vowbird://` works in Expo Go without that.
 
 ## License
 
