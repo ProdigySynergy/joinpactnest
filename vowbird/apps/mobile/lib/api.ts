@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
+import { formatUserFacingApiError } from "@vowbird/shared";
 
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
@@ -31,7 +32,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(typeof err.error === "string" ? err.error : JSON.stringify(err.error));
+    throw new Error(formatUserFacingApiError(err, res.statusText || "Request failed"));
   }
   return res.json();
 }

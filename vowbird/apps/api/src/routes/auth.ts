@@ -4,6 +4,7 @@ import {
   pickRandomAlias,
   registerSchema,
   VEILED_ALIASES,
+  zodErrorToMessage,
 } from "@vowbird/shared";
 import { hashPassword, sanitizeUser, verifyPassword } from "../lib/auth";
 import { prisma } from "../lib/prisma";
@@ -16,7 +17,7 @@ export async function authRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const parsed = registerSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const data = parsed.data;
@@ -57,7 +58,7 @@ export async function authRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const parsed = loginSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });

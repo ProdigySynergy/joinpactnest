@@ -3,6 +3,7 @@ import {
   createLetterSchema,
   scheduleLetterSchema,
   updateLetterSchema,
+  zodErrorToMessage,
 } from "@vowbird/shared";
 import { sanitizeUserForOthers } from "../lib/auth";
 import { prisma } from "../lib/prisma";
@@ -19,7 +20,7 @@ export async function letterRoutes(app: FastifyInstance) {
 
     const parsed = createLetterSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const data = parsed.data;
@@ -95,7 +96,7 @@ export async function letterRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const parsed = updateLetterSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const letter = await prisma.letter.findUnique({ where: { id } });
@@ -143,7 +144,7 @@ export async function letterRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const parsed = scheduleLetterSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const letter = await prisma.letter.findUnique({ where: { id } });

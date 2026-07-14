@@ -5,6 +5,7 @@ import {
   createReportCommentSchema,
   createReportSchema,
   formatDisplayName,
+  zodErrorToMessage,
 } from "@vowbird/shared";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
@@ -46,7 +47,7 @@ export async function safetyRoutes(app: FastifyInstance) {
   app.post("/reports", { preHandler: authenticate }, async (request, reply) => {
     const parsed = createReportSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     if (parsed.data.reportedUserId) {
@@ -92,7 +93,7 @@ export async function safetyRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const parsed = createReportCommentSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const report = await prisma.report.findUnique({
@@ -133,7 +134,7 @@ export async function safetyRoutes(app: FastifyInstance) {
   app.post("/blocks", { preHandler: authenticate }, async (request, reply) => {
     const parsed = createBlockSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     if (parsed.data.blockedUserId === request.userId) {

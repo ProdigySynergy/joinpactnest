@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { createCheckInSchema, parseDateOnly } from "@vowbird/shared";
+import { createCheckInSchema, parseDateOnly, zodErrorToMessage } from "@vowbird/shared";
 import { sanitizeUserForOthers } from "../lib/auth";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
@@ -42,7 +42,7 @@ export async function checkInRoutes(app: FastifyInstance) {
 
     const parsed = createCheckInSchema.safeParse(payload);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const data = parsed.data;

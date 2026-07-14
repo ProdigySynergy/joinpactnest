@@ -3,6 +3,7 @@ import {
   MAX_MOOD_UPDATES_PER_DAY,
   createEncouragementSchema,
   createMoodUpdateSchema,
+  zodErrorToMessage,
 } from "@vowbird/shared";
 import { FastifyInstance } from "fastify";
 import { sanitizeUserForOthers } from "../lib/auth";
@@ -60,7 +61,7 @@ export async function moodRoutes(app: FastifyInstance) {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: request.userId! } });
     const parsed = createMoodUpdateSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const data = parsed.data;
@@ -177,7 +178,7 @@ export async function moodRoutes(app: FastifyInstance) {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: request.userId! } });
     const parsed = createEncouragementSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const data = parsed.data;

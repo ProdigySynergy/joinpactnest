@@ -3,6 +3,7 @@ import {
   adminHideContentSchema,
   adminUpdateReportSchema,
   adminUpdateUserSchema,
+  zodErrorToMessage,
 } from "@vowbird/shared";
 import { sanitizeUser } from "../lib/auth";
 import { prisma } from "../lib/prisma";
@@ -60,7 +61,7 @@ export async function adminRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const parsed = adminUpdateUserSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const user = await prisma.user.update({ where: { id }, data: parsed.data });
@@ -84,7 +85,7 @@ export async function adminRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const parsed = adminUpdateReportSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const report = await prisma.report.update({
@@ -97,7 +98,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.patch("/admin/content/hide", { preHandler: adminPreHandler }, async (request, reply) => {
     const parsed = adminHideContentSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const { type, id } = parsed.data;
@@ -115,7 +116,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.patch("/admin/content/unhide", { preHandler: adminPreHandler }, async (request, reply) => {
     const parsed = adminHideContentSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     if (parsed.data.type === "post") {

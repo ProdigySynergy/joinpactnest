@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { createRoomPostSchema } from "@vowbird/shared";
+import { createRoomPostSchema, zodErrorToMessage } from "@vowbird/shared";
 import { sanitizeUserForOthers } from "../lib/auth";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
@@ -20,7 +20,7 @@ export async function postRoutes(app: FastifyInstance) {
 
     const parsed = createRoomPostSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const check = validateVeiledContent(parsed.data.body, member.displayModeInPact);

@@ -1,3 +1,5 @@
+import { formatUserFacingApiError } from "@vowbird/shared";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export function getToken(): string | null {
@@ -11,6 +13,10 @@ export function setToken(token: string) {
 
 export function clearToken() {
   localStorage.removeItem("vowbird_token");
+}
+
+function throwApiError(err: unknown, statusText: string): never {
+  throw new Error(formatUserFacingApiError(err, statusText || "Request failed"));
 }
 
 export async function api<T>(
@@ -28,7 +34,7 @@ export async function api<T>(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(typeof err.error === "string" ? err.error : JSON.stringify(err.error));
+    throwApiError(err, res.statusText);
   }
 
   return res.json();
@@ -47,7 +53,7 @@ export async function apiUpload<T>(path: string, formData: FormData): Promise<T>
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(typeof err.error === "string" ? err.error : JSON.stringify(err.error));
+    throwApiError(err, res.statusText);
   }
 
   return res.json();

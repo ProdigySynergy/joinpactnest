@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { createReactionSchema } from "@vowbird/shared";
+import { createReactionSchema, zodErrorToMessage } from "@vowbird/shared";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
 
@@ -7,7 +7,7 @@ export async function reactionRoutes(app: FastifyInstance) {
   app.post("/reactions", { preHandler: authenticate }, async (request, reply) => {
     const parsed = createReactionSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const data = parsed.data;

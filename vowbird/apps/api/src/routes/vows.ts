@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { createVowSchema, parseDateOnly, updateVowSchema } from "@vowbird/shared";
+import { createVowSchema, parseDateOnly, updateVowSchema, zodErrorToMessage } from "@vowbird/shared";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
 import { canCreateVow } from "../services/matching";
@@ -10,7 +10,7 @@ export async function vowRoutes(app: FastifyInstance) {
     await assertNotSuspended(request.userId!);
     const parsed = createVowSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const canCreate = await canCreateVow(request.userId!);
@@ -60,7 +60,7 @@ export async function vowRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const parsed = updateVowSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const existing = await prisma.vow.findUnique({ where: { id } });

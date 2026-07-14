@@ -17,6 +17,7 @@ export default function PactDetailPage() {
   const [postBody, setPostBody] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [msg, setMsg] = useState("");
+  const [error, setError] = useState("");
 
   const { data } = useQuery({
     queryKey: ["pact", id],
@@ -53,23 +54,31 @@ export default function PactDetailPage() {
   });
 
   async function joinPact() {
+    setError("");
+    setMsg("");
     try {
       await api(`/pacts/${id}/join`, { method: "POST", body: JSON.stringify({}) });
       setMsg("Joined pact!");
       qc.invalidateQueries({ queryKey: ["pact", id] });
     } catch (err) {
-      setMsg((err as Error).message);
+      setError((err as Error).message);
     }
   }
 
   async function joinByCode(e: FormEvent) {
     e.preventDefault();
+    setError("");
+    setMsg("");
+    if (inviteCode.trim().length < 4) {
+      setError("Enter a valid invite code");
+      return;
+    }
     try {
       await api("/pacts/join-by-code", { method: "POST", body: JSON.stringify({ inviteCode }) });
       setMsg("Joined by code!");
       qc.invalidateQueries({ queryKey: ["pact", id] });
     } catch (err) {
-      setMsg((err as Error).message);
+      setError((err as Error).message);
     }
   }
 
@@ -112,6 +121,7 @@ export default function PactDetailPage() {
                 </p>
               )}
               {msg && <p className="mt-2 text-sm text-sage">{msg}</p>}
+              {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
             </div>
 
             <div className="mb-6 flex flex-wrap gap-3">

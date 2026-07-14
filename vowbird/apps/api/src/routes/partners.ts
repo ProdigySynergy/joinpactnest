@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { partnerRequestSchema } from "@vowbird/shared";
+import { partnerRequestSchema, zodErrorToMessage } from "@vowbird/shared";
 import { sanitizeUserForOthers } from "../lib/auth";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
@@ -12,7 +12,7 @@ export async function partnerRoutes(app: FastifyInstance) {
     await assertNotSuspended(request.userId!);
     const parsed = partnerRequestSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const canMatch = await canCreateMatch(request.userId!);

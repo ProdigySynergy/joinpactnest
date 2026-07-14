@@ -212,6 +212,7 @@ See the product spec for the full endpoint list. Key routes:
 
 - Duplicate OPEN reports for the same reporter → reported user return **409**; add a follow-up comment instead.
 - Report UI shows the partner display name; user IDs stay in hidden form fields.
+- API validation failures return a short user-facing `error` string (not raw Zod JSON). Clients also sanitize any nested error payloads.
 
 ## Production deployment
 

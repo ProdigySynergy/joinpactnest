@@ -6,6 +6,7 @@ import {
   parseDateOnly,
   slugify,
   updatePactSettingsSchema,
+  zodErrorToMessage,
 } from "@vowbird/shared";
 import { sanitizeUserForOthers } from "../lib/auth";
 import { prisma } from "../lib/prisma";
@@ -36,7 +37,7 @@ export async function pactRoutes(app: FastifyInstance) {
     await assertNotSuspended(request.userId!);
     const parsed = createPactSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const data = parsed.data;
@@ -147,7 +148,7 @@ export async function pactRoutes(app: FastifyInstance) {
 
     const parsed = updatePactSettingsSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const data = parsed.data;
@@ -212,7 +213,7 @@ export async function pactRoutes(app: FastifyInstance) {
     await assertNotSuspended(request.userId!);
     const parsed = joinByCodeSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const pact = await prisma.pact.findUnique({

@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { profileModeSchema, updateProfileSchema } from "@vowbird/shared";
+import { profileModeSchema, updateProfileSchema, zodErrorToMessage } from "@vowbird/shared";
 import { sanitizeUser } from "../lib/auth";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
@@ -14,7 +14,7 @@ export async function userRoutes(app: FastifyInstance) {
   app.patch("/users/me", { preHandler: authenticate }, async (request, reply) => {
     const parsed = updateProfileSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const user = await prisma.user.update({
@@ -27,7 +27,7 @@ export async function userRoutes(app: FastifyInstance) {
   app.patch("/users/me/profile-mode", { preHandler: authenticate }, async (request, reply) => {
     const parsed = profileModeSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.flatten() });
+      return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
     const user = await prisma.user.update({
