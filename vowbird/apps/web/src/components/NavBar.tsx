@@ -60,6 +60,9 @@ export function PublicNav() {
           Vowbird
         </Link>
         <div className="flex items-center gap-3">
+          <Link href="/explore" className="text-sm text-cream/80 hover:text-gold">
+            Explore
+          </Link>
           <Link href="/login" className="text-sm text-cream/80 hover:text-gold">
             Log in
           </Link>

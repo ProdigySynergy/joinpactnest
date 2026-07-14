@@ -17,6 +17,7 @@ import { reactionRoutes } from "./routes/reactions";
 import { safetyRoutes } from "./routes/safety";
 import { notificationRoutes } from "./routes/notifications";
 import { adminRoutes } from "./routes/admin";
+import { publicPactRoutes } from "./routes/publicPacts";
 import { runMatching } from "./services/matching";
 
 export interface BuildAppOptions {
@@ -42,6 +43,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   app.get("/health", async () => ({ status: "ok", service: "vowbird-api" }));
 
+  await app.register(publicPactRoutes);
   await app.register(authRoutes);
   await app.register(userRoutes);
   await app.register(vowRoutes);

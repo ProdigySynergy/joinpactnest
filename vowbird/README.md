@@ -166,6 +166,7 @@ See [docs/TESTING.md](docs/TESTING.md) for package-level commands and how to add
 - **Partner matching** — Goal-based matching (not swiping)
 - **Letters** — Partner letters, future-self, group reflections
 - **Pacts** — Public, invite-only, and private circles
+- **Public pact pages** — Shareable `/p/[slug]` profiles (SEO + social), explore hub at `/explore`
 - **Streaks & progress** — Streak counters and pact leaderboards
 - **Safety** — Report, block, content filtering in Veiled Mode
 - **Admin dashboard** — User moderation, reports, stats
@@ -182,9 +183,18 @@ See the product spec for the full endpoint list. Key routes:
 - `GET/POST /vows`, `POST /check-ins`
 - `POST /partner-requests`, `GET /matches/me`
 - `POST/GET /letters`, `POST/GET /pacts`
+- `GET /public/pacts`, `GET /public/pacts/:slug` (no auth — indexed share pages)
 - `POST /reports`, `GET /reports/open?reportedUserId=`, `POST /reports/:id/comments` (max 2 follow-ups while OPEN)
 - `POST /blocks`, `GET /blocks/me`
 - `GET /admin/stats` (admin only)
+
+### Public pacts (assumptions)
+
+- Only `privacy=PUBLIC` + `status=ACTIVE` pacts are listed and crawlable.
+- Public payloads omit invite codes, emails, and user IDs.
+- **On track** = share of members with ≥70% weekly completion.
+- Join still requires an account (`POST /pacts/:id/join`).
+- Set `NEXT_PUBLIC_SITE_URL` for correct Open Graph / share URLs.
 
 ### Safety notes
 

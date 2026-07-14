@@ -5,11 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState, Suspense } from "react";
 import { PublicNav } from "@/components/NavBar";
 import { useAuth } from "@/lib/auth-context";
+import { safeNextPath } from "@/lib/public-pacts";
 
 function RegisterForm() {
   const { register } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
+  const next = safeNextPath(params.get("next"));
   const [form, setForm] = useState({
     name: "",
     username: "",
@@ -28,7 +30,7 @@ function RegisterForm() {
     setLoading(true);
     try {
       await register(form);
-      router.push("/dashboard");
+      router.push(next);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -66,7 +68,13 @@ function RegisterForm() {
         </button>
       </form>
       <p className="mt-4 text-center text-sm text-navy/60">
-        Have an account? <Link href="/login" className="text-gold hover:underline">Log in</Link>
+        Have an account?{" "}
+        <Link
+          href={`/login?next=${encodeURIComponent(next)}`}
+          className="text-gold hover:underline"
+        >
+          Log in
+        </Link>
       </p>
     </div>
   );

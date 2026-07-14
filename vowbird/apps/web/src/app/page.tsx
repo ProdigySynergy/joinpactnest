@@ -100,6 +100,18 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section className="bg-navy/5 px-4 py-16">
+        <div className="mx-auto max-w-4xl text-center">
+          <h2 className="mb-4 text-2xl font-bold">Join a public pact</h2>
+          <p className="mb-6 text-navy/70">
+            Browse open circles with live success rates, member counts, and streaks — then join with an account.
+          </p>
+          <Link href="/explore" className="btn-primary">
+            Explore public pacts
+          </Link>
+        </div>
+      </section>
+
       <section className="px-4 py-16">
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="mb-4 text-2xl font-bold">Simple pricing</h2>

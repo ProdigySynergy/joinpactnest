@@ -86,6 +86,17 @@ export async function pactRoutes(app: FastifyInstance) {
       where: { privacy: "PUBLIC", status: "ACTIVE" },
       orderBy: { createdAt: "desc" },
       take: 50,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        category: true,
+        privacy: true,
+        frequencyType: true,
+        startDate: true,
+        createdAt: true,
+      },
     });
     return { pacts };
   });

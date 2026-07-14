@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormEvent, useState } from "react";
@@ -17,7 +18,15 @@ export default function PactDetailPage() {
   const { data } = useQuery({
     queryKey: ["pact", id],
     queryFn: () => api<{
-      pact: { id: string; title: string; description: string | null; inviteCode: string; privacy: string; members: Array<{ user: { displayName: string } }> };
+      pact: {
+        id: string;
+        title: string;
+        slug: string;
+        description: string | null;
+        inviteCode: string;
+        privacy: string;
+        members: Array<{ user: { displayName: string } }>;
+      };
       leaderboard: Array<{ user: { displayName: string }; currentStreak: number; completionPercentage: number }>;
     }>(`/pacts/${id}`),
   });
@@ -68,6 +77,13 @@ export default function PactDetailPage() {
               <span className="badge">{pact.privacy}</span>
               <h1 className="mt-2 text-3xl font-bold">{pact.title}</h1>
               {pact.description && <p className="mt-2 text-navy/70">{pact.description}</p>}
+              {pact.privacy === "PUBLIC" && (
+                <p className="mt-2 text-sm">
+                  <Link href={`/p/${pact.slug}`} className="text-gold hover:underline">
+                    Open public share page →
+                  </Link>
+                </p>
+              )}
               {msg && <p className="mt-2 text-sm text-sage">{msg}</p>}
             </div>
 
