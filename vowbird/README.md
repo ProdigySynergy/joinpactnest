@@ -147,6 +147,7 @@ For EAS builds, see `docs/DEPLOYMENT.md`.
 | `pnpm test:watch` | Run tests in watch mode |
 | `pnpm test:coverage` | Run tests with coverage reports |
 | `pnpm lint` | Typecheck all packages |
+| `pnpm og:pacts` | Generate Open Graph PNGs for public pacts |
 
 ## Testing
 
@@ -224,7 +225,9 @@ See the product spec for the full endpoint list. Key routes:
 - **On track** = share of members with ≥70% weekly completion.
 - Join still requires an account (`POST /pacts/:id/join`).
 - Set `NEXT_PUBLIC_SITE_URL` for correct Open Graph / share URLs.
-- Public pact **Share** opens a screenshottable card (brand, member count, leaders, full pact URL + QR). Download PNG or copy link. (Cron OG image files for `og:image` are a planned follow-up.)
+- Public pact **Share** opens a screenshottable card (brand, member count, leaders, full pact URL + QR). Download PNG or copy link.
+- **OG images** for crawlers: run `pnpm og:pacts` to write `uploads/og/pacts/{slug}.png` (served at `{API_PUBLIC_URL}/uploads/og/pacts/{slug}.png`). Linked as `og:image` / Twitter large image on `/p/[slug]`.
+- **Daily cron example:** `0 3 * * * cd /path/to/vowbird && pnpm og:pacts >> /var/log/vowbird-og.log 2>&1`
 
 ### Safety notes
 

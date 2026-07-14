@@ -8,8 +8,11 @@ dist/
 .env.local
 uploads/avatars/*
 uploads/proofs/*
+uploads/og/*
 !uploads/avatars/.gitkeep
 !uploads/proofs/.gitkeep
+!uploads/og/.gitkeep
+!uploads/og/pacts/.gitkeep
 .DS_Store
 coverage/
 *.tsbuildinfo

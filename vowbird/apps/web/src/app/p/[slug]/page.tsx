@@ -6,6 +6,7 @@ import { PersonCard } from "@/components/PersonCard";
 import {
   fetchPublicPact,
   formatCategory,
+  publicPactOgImageUrl,
   publicPactShareUrl,
 } from "@/lib/public-pacts";
 import { PublicPactJoin } from "./PublicPactJoin";
@@ -24,6 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     pact.description ||
     `${stats.memberCount} people · ${stats.successRate}% on track · live ${stats.daysLive} days on Vowbird`;
   const url = publicPactShareUrl(pact.slug);
+  const ogImage = publicPactOgImageUrl(pact.slug);
 
   return {
     title: `${pact.title} · Vowbird Pact`,
@@ -35,11 +37,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url,
       siteName: "Vowbird",
       type: "website",
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: `${pact.title} on Vowbird`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: pact.title,
       description,
+      images: [ogImage],
     },
     robots: { index: true, follow: true },
   };
