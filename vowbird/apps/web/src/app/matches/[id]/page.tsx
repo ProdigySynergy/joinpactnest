@@ -45,7 +45,18 @@ export default function MatchDetailPage() {
                 Write letter
               </Link>
               <Link href={`/vows/${match.vow.id}`} className="btn-secondary">View vow</Link>
-              <Link href={`/safety?reportUser=${match.partner.id}`} className="btn-secondary">Report</Link>
+              <Link
+                href={`/safety?reportUser=${match.partner.id}&name=${encodeURIComponent(match.partner.displayName)}`}
+                className="btn-danger"
+              >
+                Report user
+              </Link>
+              <Link
+                href={`/safety?blockUser=${match.partner.id}&reportUser=${match.partner.id}&name=${encodeURIComponent(match.partner.displayName)}`}
+                className="btn-danger"
+              >
+                Block
+              </Link>
               <button onClick={rematch} className="btn-secondary">Rematch</button>
               <button onClick={endMatch} className="text-sm text-red-600">End match</button>
             </div>

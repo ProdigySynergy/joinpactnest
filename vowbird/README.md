@@ -182,8 +182,14 @@ See the product spec for the full endpoint list. Key routes:
 - `GET/POST /vows`, `POST /check-ins`
 - `POST /partner-requests`, `GET /matches/me`
 - `POST/GET /letters`, `POST/GET /pacts`
-- `POST /reports`, `POST /blocks`
+- `POST /reports`, `GET /reports/open?reportedUserId=`, `POST /reports/:id/comments` (max 2 follow-ups while OPEN)
+- `POST /blocks`, `GET /blocks/me`
 - `GET /admin/stats` (admin only)
+
+### Safety notes
+
+- Duplicate OPEN reports for the same reporter → reported user return **409**; add a follow-up comment instead.
+- Report UI shows the partner display name; user IDs stay in hidden form fields.
 
 ## Production deployment
 

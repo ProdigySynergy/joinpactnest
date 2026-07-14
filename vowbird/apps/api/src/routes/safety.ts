@@ -1,13 +1,75 @@
 import { FastifyInstance } from "fastify";
-import { createBlockSchema, createReportSchema } from "@vowbird/shared";
+import {
+  MAX_REPORT_FOLLOW_UPS,
+  createBlockSchema,
+  createReportCommentSchema,
+  createReportSchema,
+  formatDisplayName,
+} from "@vowbird/shared";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
 
 export async function safetyRoutes(app: FastifyInstance) {
+  app.get("/reports/open", { preHandler: authenticate }, async (request, reply) => {
+    const { reportedUserId } = request.query as { reportedUserId?: string };
+    if (!reportedUserId) {
+      return reply.status(400).send({ error: "reportedUserId is required" });
+    }
+
+    const reportedUser = await prisma.user.findUnique({ where: { id: reportedUserId } });
+    if (!reportedUser) {
+      return reply.status(404).send({ error: "User not found" });
+    }
+
+    const report = await prisma.report.findFirst({
+      where: {
+        reporterId: request.userId!,
+        reportedUserId,
+        status: "OPEN",
+      },
+      include: {
+        comments: { orderBy: { createdAt: "asc" } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return {
+      reportedUser: {
+        id: reportedUser.id,
+        displayName: formatDisplayName(reportedUser),
+      },
+      report,
+      maxFollowUps: MAX_REPORT_FOLLOW_UPS,
+    };
+  });
+
   app.post("/reports", { preHandler: authenticate }, async (request, reply) => {
     const parsed = createReportSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: parsed.error.flatten() });
+    }
+
+    if (parsed.data.reportedUserId) {
+      if (parsed.data.reportedUserId === request.userId) {
+        return reply.status(400).send({ error: "Cannot report yourself" });
+      }
+
+      const existing = await prisma.report.findFirst({
+        where: {
+          reporterId: request.userId!,
+          reportedUserId: parsed.data.reportedUserId,
+          status: "OPEN",
+        },
+        include: { comments: { orderBy: { createdAt: "asc" } } },
+      });
+
+      if (existing) {
+        return reply.status(409).send({
+          error: "You already have an open report for this user. Add a follow-up comment instead.",
+          report: existing,
+          maxFollowUps: MAX_REPORT_FOLLOW_UPS,
+        });
+      }
     }
 
     const report = await prisma.report.create({
@@ -20,9 +82,52 @@ export async function safetyRoutes(app: FastifyInstance) {
         reason: parsed.data.reason,
         details: parsed.data.details,
       },
+      include: { comments: true },
     });
 
-    return reply.status(201).send({ report });
+    return reply.status(201).send({ report, maxFollowUps: MAX_REPORT_FOLLOW_UPS });
+  });
+
+  app.post("/reports/:id/comments", { preHandler: authenticate }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const parsed = createReportCommentSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: parsed.error.flatten() });
+    }
+
+    const report = await prisma.report.findUnique({
+      where: { id },
+      include: { comments: true },
+    });
+
+    if (!report || report.reporterId !== request.userId) {
+      return reply.status(404).send({ error: "Report not found" });
+    }
+
+    if (report.status !== "OPEN") {
+      return reply.status(400).send({ error: "This report is closed. You cannot add more comments." });
+    }
+
+    if (report.comments.length >= MAX_REPORT_FOLLOW_UPS) {
+      return reply.status(400).send({
+        error: `You can only add up to ${MAX_REPORT_FOLLOW_UPS} follow-up comments while waiting for review.`,
+      });
+    }
+
+    const comment = await prisma.reportComment.create({
+      data: {
+        reportId: report.id,
+        authorId: request.userId!,
+        body: parsed.data.body,
+      },
+    });
+
+    const updated = await prisma.report.findUnique({
+      where: { id: report.id },
+      include: { comments: { orderBy: { createdAt: "asc" } } },
+    });
+
+    return reply.status(201).send({ comment, report: updated, maxFollowUps: MAX_REPORT_FOLLOW_UPS });
   });
 
   app.post("/blocks", { preHandler: authenticate }, async (request, reply) => {

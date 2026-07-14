@@ -169,6 +169,7 @@ model User {
   reactions            Reaction[]
   reportsMade          Report[]            @relation("ReportReporter")
   reportsAgainst       Report[]            @relation("ReportReportedUser")
+  reportComments       ReportComment[]
   blocksMade           Block[]             @relation("BlockBlocker")
   blocksReceived       Block[]             @relation("BlockBlocked")
   notificationPref     NotificationPreference?
@@ -406,10 +407,26 @@ model Report {
   post            RoomPost?    @relation(fields: [postId], references: [id], onDelete: SetNull)
   checkIn         CheckIn?     @relation(fields: [checkInId], references: [id], onDelete: SetNull)
   letter          Letter?      @relation(fields: [letterId], references: [id], onDelete: SetNull)
+  comments        ReportComment[]
 
   @@index([status])
   @@index([reportedUserId])
   @@index([reporterId])
+  @@index([reporterId, reportedUserId, status])
+}
+
+model ReportComment {
+  id        String   @id @default(cuid())
+  reportId  String
+  authorId  String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@index([authorId])
 }
 
 model Block {

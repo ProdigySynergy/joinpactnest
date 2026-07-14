@@ -116,6 +116,10 @@ export const createReportSchema = z.object({
   details: z.string().max(2000).optional(),
 });
 
+export const createReportCommentSchema = z.object({
+  body: z.string().min(3).max(2000),
+});
+
 export const createBlockSchema = z.object({
   blockedUserId: z.string(),
   reason: z.string().max(500).optional(),

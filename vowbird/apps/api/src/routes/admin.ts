@@ -69,7 +69,11 @@ export async function adminRoutes(app: FastifyInstance) {
 
   app.get("/admin/reports", { preHandler: adminPreHandler }, async () => {
     const reports = await prisma.report.findMany({
-      include: { reporter: true, reportedUser: true },
+      include: {
+        reporter: true,
+        reportedUser: true,
+        comments: { orderBy: { createdAt: "asc" } },
+      },
       orderBy: { createdAt: "desc" },
       take: 100,
     });

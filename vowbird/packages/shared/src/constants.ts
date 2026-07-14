@@ -47,6 +47,9 @@ export const FREE_PLAN_LIMITS = {
   maxActiveMatches: 1,
 } as const;
 
+/** Follow-up comments allowed on an OPEN report before admin responds. */
+export const MAX_REPORT_FOLLOW_UPS = 2;
+
 export const BRAND = {
   name: "Vowbird",
   tagline: "Keep your promise with someone beside you.",
