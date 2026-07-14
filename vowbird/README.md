@@ -163,6 +163,7 @@ See [docs/TESTING.md](docs/TESTING.md) for package-level commands and how to add
 - **Veiled Mode** — Anonymous accountability with generated aliases
 - **Open Mode** — Visible profiles, avatars, public pacts
 - **Profiles** — `/u/[username]` with progress, pact/match counts; optional gender (male/female/fluid) + tagline
+- **Creators** — Pact owners and match partners shown on pages with profile / letter / report / block actions
 - **Vows** — Personal commitments with daily/weekly check-ins
 - **Partner matching** — Goal-based matching (not swiping)
 - **Letters** — Partner letters, future-self, group reflections

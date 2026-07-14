@@ -5,11 +5,21 @@ import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MoodFeed } from "@/components/MoodFeed";
 import { NavBar } from "@/components/NavBar";
+import { PersonCard } from "@/components/PersonCard";
 import { RequireAuth } from "@/components/RequireAuth";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+
+type Person = {
+  id: string;
+  username: string;
+  displayName: string;
+  tagline?: string | null;
+};
 
 export default function MatchDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const router = useRouter();
   const qc = useQueryClient();
 
@@ -21,7 +31,8 @@ export default function MatchDetailPage() {
           id: string;
           status: string;
           matchMode: string;
-          partner: { displayName: string; id: string };
+          partner: Person;
+          initiatedBy: Person;
           vow: { title: string; id: string; noJudgementZone?: boolean };
         };
         leaderboard: Array<{
@@ -35,6 +46,8 @@ export default function MatchDetailPage() {
   });
 
   const match = data?.match;
+  const partnerInitiated = match?.initiatedBy.id === match?.partner.id;
+  const youInitiated = match?.initiatedBy.id === user?.id;
 
   async function endMatch() {
     if (!confirm("End this match?")) return;
@@ -59,30 +72,17 @@ export default function MatchDetailPage() {
               {data?.noJudgementZone && (
                 <span className="badge ml-2 border-sage/40 bg-sage/15 text-sage">No judgement</span>
               )}
-              <h1 className="mt-3 text-2xl font-bold">{match.partner.displayName}</h1>
-              <p className="mt-2 text-navy/70">Partner for: {match.vow.title}</p>
+              <h1 className="mt-3 text-2xl font-bold">Partner match</h1>
+              <p className="mt-2 text-navy/70">
+                Vow:{" "}
+                <Link href={`/vows/${match.vow.id}`} className="text-gold hover:underline">
+                  {match.vow.title}
+                </Link>
+              </p>
+              {youInitiated && (
+                <p className="mt-2 text-sm text-navy/50">You started the earlier match request.</p>
+              )}
               <div className="mt-6 flex flex-wrap gap-3">
-                <Link
-                  href={`/letters/new?partnerMatchId=${id}&recipientId=${match.partner.id}`}
-                  className="btn-primary"
-                >
-                  Write letter
-                </Link>
-                <Link href={`/vows/${match.vow.id}`} className="btn-secondary">
-                  View vow
-                </Link>
-                <Link
-                  href={`/safety?reportUser=${match.partner.id}&name=${encodeURIComponent(match.partner.displayName)}`}
-                  className="btn-danger"
-                >
-                  Report user
-                </Link>
-                <Link
-                  href={`/safety?blockUser=${match.partner.id}&reportUser=${match.partner.id}&name=${encodeURIComponent(match.partner.displayName)}`}
-                  className="btn-danger"
-                >
-                  Block
-                </Link>
                 <button onClick={rematch} className="btn-secondary">
                   Rematch
                 </button>
@@ -91,6 +91,12 @@ export default function MatchDetailPage() {
                 </button>
               </div>
             </div>
+
+            <PersonCard
+              person={match.partner}
+              roleLabel={partnerInitiated ? "Your partner · match initiator" : "Your partner"}
+              partnerMatchId={id}
+            />
 
             {data?.leaderboardEnabled && (data.leaderboard?.length ?? 0) > 0 && (
               <div className="card">

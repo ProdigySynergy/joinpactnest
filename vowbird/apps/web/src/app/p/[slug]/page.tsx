@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicNav } from "@/components/NavBar";
+import { PersonCard } from "@/components/PersonCard";
 import {
   fetchPublicPact,
   formatCategory,
@@ -48,7 +49,7 @@ export default async function PublicPactPage({ params }: Props) {
   const data = await fetchPublicPact(params.slug);
   if (!data) notFound();
 
-  const { pact, stats, leaders } = data;
+  const { pact, stats, leaders, owner } = data;
   const shareUrl = publicPactShareUrl(pact.slug);
   const rhythm =
     pact.frequencyType === "DAILY"
@@ -81,6 +82,10 @@ export default async function PublicPactPage({ params }: Props) {
             <SharePactButton url={shareUrl} title={pact.title} />
           </div>
         </div>
+      </section>
+
+      <section className="mx-auto max-w-3xl px-4 py-10">
+        <PersonCard person={owner} roleLabel="Pact creator" variant="public" />
       </section>
 
       <section className="mx-auto max-w-3xl px-4 py-12">

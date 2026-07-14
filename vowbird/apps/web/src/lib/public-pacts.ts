@@ -19,6 +19,13 @@ export type PublicPactProfile = {
     endDate: string | null;
     createdAt: string;
   };
+  owner: {
+    id: string;
+    username: string;
+    displayName: string;
+    tagline: string | null;
+    profileMode: string;
+  };
   stats: {
     memberCount: number;
     daysLive: number;

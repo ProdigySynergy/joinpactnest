@@ -110,6 +110,7 @@ export async function pactRoutes(app: FastifyInstance) {
     const pact = await prisma.pact.findUnique({
       where: { id },
       include: {
+        owner: true,
         members: {
           where: { leftAt: null },
           include: { user: true },
@@ -125,11 +126,13 @@ export async function pactRoutes(app: FastifyInstance) {
     }
 
     const leaderboard = pact.leaderboardEnabled ? await getPactLeaderboard(id) : [];
+    const { owner, members, ...pactFields } = pact;
 
     return {
       pact: {
-        ...pact,
-        members: pact.members.map((m) => ({
+        ...pactFields,
+        owner: sanitizeUserForOthers(owner),
+        members: members.map((m) => ({
           ...m,
           user: sanitizeUserForOthers(m.user),
         })),

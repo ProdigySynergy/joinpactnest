@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormEvent, useState } from "react";
 import { MoodFeed } from "@/components/MoodFeed";
 import { NavBar } from "@/components/NavBar";
+import { PersonCard } from "@/components/PersonCard";
 import { RequireAuth } from "@/components/RequireAuth";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -33,7 +34,15 @@ export default function PactDetailPage() {
           ownerId: string;
           noJudgementZone: boolean;
           leaderboardEnabled: boolean;
-          members: Array<{ user: { displayName: string } }>;
+          owner: {
+            id: string;
+            username: string;
+            displayName: string;
+            tagline?: string | null;
+          };
+          members: Array<{
+            user: { id: string; username: string; displayName: string; tagline?: string | null };
+          }>;
         };
         leaderboard: Array<{
           user: { displayName: string };
@@ -122,6 +131,14 @@ export default function PactDetailPage() {
               )}
               {msg && <p className="mt-2 text-sm text-sage">{msg}</p>}
               {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            </div>
+
+            <div className="mb-6">
+              <PersonCard
+                person={pact.owner}
+                roleLabel="Pact creator"
+                isSelf={user?.id === pact.owner.id}
+              />
             </div>
 
             <div className="mb-6 flex flex-wrap gap-3">
@@ -213,11 +230,19 @@ export default function PactDetailPage() {
                   <p className="mt-4 text-sm text-navy/50">Leaderboard is turned off for this pact.</p>
                 )}
                 <h3 className="mt-6 font-semibold">Members ({pact.members.length})</h3>
-                <div className="mt-2 space-y-1">
-                  {pact.members.map((m, i) => (
-                    <p key={i} className="text-sm">
+                <div className="mt-2 space-y-2">
+                  {pact.members.map((m) => (
+                    <Link
+                      key={m.user.id}
+                      href={`/u/${m.user.username}`}
+                      className="block text-sm text-navy hover:text-gold"
+                    >
                       {m.user.displayName}
-                    </p>
+                      <span className="text-navy/45"> @{m.user.username}</span>
+                      {m.user.id === pact.owner.id && (
+                        <span className="ml-2 text-xs uppercase tracking-wide text-gold">creator</span>
+                      )}
+                    </Link>
                   ))}
                 </div>
               </div>

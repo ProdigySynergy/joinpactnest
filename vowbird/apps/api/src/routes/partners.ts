@@ -151,6 +151,7 @@ export async function partnerRoutes(app: FastifyInstance) {
       match: {
         ...match,
         partner: sanitizeUserForOthers(partner),
+        initiatedBy: sanitizeUserForOthers(match.userA),
         userA: sanitizeUserForOthers(match.userA),
         userB: sanitizeUserForOthers(match.userB),
       },

@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma";
+import { sanitizePublicProfile } from "../lib/auth";
 import { getPactLeaderboard } from "./progress";
 
 function daysBetween(from: Date, to = new Date()): number {
@@ -73,6 +74,7 @@ export async function listPublicPacts(limit = 50): Promise<PublicPactSummary[]> 
 export async function getPublicPactBySlug(slug: string) {
   const pact = await prisma.pact.findFirst({
     where: { slug, privacy: "PUBLIC", status: "ACTIVE" },
+    include: { owner: true },
   });
   if (!pact) return null;
 
@@ -92,6 +94,8 @@ export async function getPublicPactBySlug(slug: string) {
   const activeThisWeek = leaderboard.filter((row) => row.weeklyCompleted > 0).length;
   const topStreak = leaderboard.reduce((max, row) => Math.max(max, row.currentStreak), 0);
 
+  const ownerPublic = sanitizePublicProfile(pact.owner);
+
   return {
     pact: {
       id: pact.id,
@@ -106,6 +110,13 @@ export async function getPublicPactBySlug(slug: string) {
       startDate: pact.startDate.toISOString().slice(0, 10),
       endDate: pact.endDate ? pact.endDate.toISOString().slice(0, 10) : null,
       createdAt: pact.createdAt.toISOString(),
+    },
+    owner: {
+      id: ownerPublic.id,
+      username: ownerPublic.username,
+      displayName: ownerPublic.displayName,
+      tagline: ownerPublic.tagline,
+      profileMode: ownerPublic.profileMode,
     },
     stats: {
       memberCount,
