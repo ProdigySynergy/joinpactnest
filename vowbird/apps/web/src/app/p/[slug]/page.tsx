@@ -73,10 +73,20 @@ export default async function PublicPactPage({ params }: Props) {
           <span className="inline-flex rounded-full border border-cream/35 bg-cream/15 px-3 py-1 text-xs font-medium uppercase tracking-wide text-cream">
             {formatCategory(pact.category)}
           </span>
+          {pact.noJudgementZone && (
+            <span className="ml-2 inline-flex rounded-full border border-sage/50 bg-sage/25 px-3 py-1 text-xs font-medium uppercase tracking-wide text-cream">
+              No judgement zone
+            </span>
+          )}
           <h1 className="mt-4 text-4xl font-bold leading-tight md:text-5xl">{pact.title}</h1>
           <p className="mt-4 max-w-2xl text-lg text-cream/75">
             {pact.description || `${rhythm}. Accountability that sticks.`}
           </p>
+          {pact.noJudgementZone && (
+            <p className="mt-3 max-w-2xl text-sm text-cream/60">
+              This circle softens misses — encouragement over call-outs.
+            </p>
+          )}
           <div className="mt-8 flex flex-wrap gap-3">
             <PublicPactJoin pactId={pact.id} slug={pact.slug} ownerId={owner.id} />
             <SharePactButton url={shareUrl} title={pact.title} />

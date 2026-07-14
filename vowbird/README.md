@@ -172,7 +172,7 @@ See [docs/TESTING.md](docs/TESTING.md) for package-level commands and how to add
 - **Pacts** — Public, invite-only, and private circles
 - **Public pact pages** — Shareable `/p/[slug]` profiles (SEO + social), explore hub at `/explore`
 - **Mood check** — Freeform mood updates (4h cooldown · soft 8/day cap); partners send one-tap cheer chips
-- **No judgement zone** — Soft misses vs system call-outs (partner match page for vows; pact settings for groups)
+- **No judgement zone** — Soft misses vs call-outs. Toggle on **pacts** (create/settings); shown on public `/p/[slug]` + explore when on. For partner vows, toggle lives on the **match** page.
 - **Leaderboards** — Partner streak board on match page; pact boards on pact pages (on by default)
 - **Streaks & progress** — Streak counters and leaderboards
 - **Safety** — Report, block, content filtering in Veiled Mode; self-actions (pacter, message, report, block, partner invite, join-to-connect) are blocked in UI and API

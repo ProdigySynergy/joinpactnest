@@ -18,6 +18,7 @@ export type PublicPactProfile = {
     startDate: string;
     endDate: string | null;
     createdAt: string;
+    noJudgementZone: boolean;
   };
   owner: {
     id: string;
@@ -52,6 +53,7 @@ export type PublicPactListItem = {
   daysLive: number;
   successRate: number;
   avgCompletionPercentage: number;
+  noJudgementZone: boolean;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";

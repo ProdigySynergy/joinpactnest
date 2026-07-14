@@ -36,6 +36,9 @@ export default async function ExplorePage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <span className="badge">{formatCategory(pact.category)}</span>
+                  {pact.noJudgementZone && (
+                    <span className="badge ml-2 border-sage/40 bg-sage/15 text-sage">No judgement</span>
+                  )}
                   <h2 className="mt-2 text-xl font-semibold">{pact.title}</h2>
                   {pact.description && (
                     <p className="mt-1 text-sm text-navy/60">{pact.description}</p>

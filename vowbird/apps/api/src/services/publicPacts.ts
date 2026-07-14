@@ -26,6 +26,7 @@ export type PublicPactSummary = {
   daysLive: number;
   successRate: number;
   avgCompletionPercentage: number;
+  noJudgementZone: boolean;
 };
 
 export async function listPublicPacts(limit = 50): Promise<PublicPactSummary[]> {
@@ -66,6 +67,7 @@ export async function listPublicPacts(limit = 50): Promise<PublicPactSummary[]> 
         daysLive: daysBetween(pact.startDate),
         successRate,
         avgCompletionPercentage,
+        noJudgementZone: pact.noJudgementZone,
       };
     })
   );
@@ -110,6 +112,7 @@ export async function getPublicPactBySlug(slug: string) {
       startDate: pact.startDate.toISOString().slice(0, 10),
       endDate: pact.endDate ? pact.endDate.toISOString().slice(0, 10) : null,
       createdAt: pact.createdAt.toISOString(),
+      noJudgementZone: pact.noJudgementZone,
     },
     owner: {
       id: ownerPublic.id,
