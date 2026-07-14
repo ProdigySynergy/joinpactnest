@@ -1,12 +1,14 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ENCOURAGEMENT_LABELS,
   ENCOURAGEMENT_STICKERS,
+  MAX_MOOD_UPDATES_PER_DAY,
   MOOD_LABELS,
   MOOD_TYPES,
+  MOOD_UPDATE_COOLDOWN_HOURS,
 } from "@vowbird/shared";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -37,13 +39,24 @@ function contextQuery(ctx: Context): string {
   return `partnerMatchId=${ctx.partnerMatchId}`;
 }
 
+function formatCooldownRemaining(ms: number): string {
+  const totalMinutes = Math.max(1, Math.ceil(ms / 60_000));
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
+
 export function MoodFeed({ context, canPost = true }: { context: Context; canPost?: boolean }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [mood, setMood] = useState<string>("OKAY");
   const [note, setNote] = useState("");
   const [msg, setMsg] = useState("");
+  const [error, setError] = useState("");
   const [cheerNote, setCheerNote] = useState<Record<string, string>>({});
+  const [now, setNow] = useState(() => Date.now());
 
   const queryKey = ["moods", context];
   const { data } = useQuery({
@@ -51,9 +64,33 @@ export function MoodFeed({ context, canPost = true }: { context: Context; canPos
     queryFn: () => api<{ moods: MoodRow[] }>(`/moods?${contextQuery(context)}`),
   });
 
+  const myLatestAt = useMemo(() => {
+    const mine = (data?.moods || []).filter((row) => row.user.id === user?.id);
+    if (!mine.length) return null;
+    return Math.max(...mine.map((row) => new Date(row.createdAt).getTime()));
+  }, [data?.moods, user?.id]);
+
+  const cooldownMs = MOOD_UPDATE_COOLDOWN_HOURS * 60 * 60 * 1000;
+  const nextAllowedAt = myLatestAt != null ? myLatestAt + cooldownMs : null;
+  const remainingMs = nextAllowedAt != null ? nextAllowedAt - now : 0;
+  const onCooldown = remainingMs > 0;
+
+  useEffect(() => {
+    if (!onCooldown) return;
+    const id = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, [onCooldown]);
+
   async function postMood(e: FormEvent) {
     e.preventDefault();
     setMsg("");
+    setError("");
+    if (onCooldown) {
+      setError(
+        `You can share another mood in ${formatCooldownRemaining(remainingMs)} (${MOOD_UPDATE_COOLDOWN_HOURS}h between updates).`
+      );
+      return;
+    }
     try {
       await api("/moods", {
         method: "POST",
@@ -63,12 +100,13 @@ export function MoodFeed({ context, canPost = true }: { context: Context; canPos
       setMsg("Mood shared");
       qc.invalidateQueries({ queryKey });
     } catch (err) {
-      setMsg((err as Error).message);
+      setError((err as Error).message);
     }
   }
 
   async function sendCheer(moodUpdateId: string, sticker: string) {
     setMsg("");
+    setError("");
     try {
       await api("/encouragements", {
         method: "POST",
@@ -81,27 +119,38 @@ export function MoodFeed({ context, canPost = true }: { context: Context; canPos
       setCheerNote((prev) => ({ ...prev, [moodUpdateId]: "" }));
       qc.invalidateQueries({ queryKey });
     } catch (err) {
-      setMsg((err as Error).message);
+      setError((err as Error).message);
     }
   }
 
   return (
     <div className="card space-y-4">
       <h2 className="font-semibold">Mood check</h2>
-      <p className="text-sm text-navy/60">Share how you&apos;re doing anytime. Partners can send a quick cheer.</p>
+      <p className="text-sm text-navy/60">
+        Share how you&apos;re doing — once every {MOOD_UPDATE_COOLDOWN_HOURS} hours (up to{" "}
+        {MAX_MOOD_UPDATES_PER_DAY}/day). Partners can send a quick cheer.
+      </p>
       {msg && <p className="text-sm text-sage">{msg}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       {canPost && (
         <form onSubmit={postMood} className="space-y-3 border-b border-navy/10 pb-4">
+          {onCooldown && (
+            <p className="rounded-xl border border-navy/10 bg-navy/5 px-3 py-2 text-sm text-navy/70">
+              Give your last check-in room to breathe. You can share again in{" "}
+              <span className="font-medium text-navy">{formatCooldownRemaining(remainingMs)}</span>.
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             {MOOD_TYPES.map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setMood(m)}
+                disabled={onCooldown}
                 className={`rounded-lg border px-3 py-1.5 text-sm ${
                   mood === m ? "border-gold bg-gold/20 font-medium" : "border-navy/15"
-                }`}
+                } disabled:cursor-not-allowed disabled:opacity-50`}
               >
                 {MOOD_LABELS[m]}
               </button>
@@ -113,9 +162,10 @@ export function MoodFeed({ context, canPost = true }: { context: Context; canPos
             value={note}
             onChange={(e) => setNote(e.target.value)}
             maxLength={280}
+            disabled={onCooldown}
           />
-          <button type="submit" className="btn-secondary w-full">
-            Share mood
+          <button type="submit" className="btn-secondary w-full" disabled={onCooldown}>
+            {onCooldown ? `Available in ${formatCooldownRemaining(remainingMs)}` : "Share mood"}
           </button>
         </form>
       )}

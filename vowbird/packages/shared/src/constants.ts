@@ -69,6 +69,9 @@ export const ENCOURAGEMENT_LABELS: Record<(typeof ENCOURAGEMENT_STICKERS)[number
 /** Soft daily cap for freeform mood updates. */
 export const MAX_MOOD_UPDATES_PER_DAY = 8;
 
+/** Minimum time between mood shares (any context). */
+export const MOOD_UPDATE_COOLDOWN_HOURS = 4;
+
 export const VEILED_ALIASES = [
   "Quiet Falcon",
   "Blue Lantern",

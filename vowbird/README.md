@@ -167,7 +167,7 @@ See [docs/TESTING.md](docs/TESTING.md) for package-level commands and how to add
 - **Letters** — Partner letters, future-self, group reflections
 - **Pacts** — Public, invite-only, and private circles
 - **Public pact pages** — Shareable `/p/[slug]` profiles (SEO + social), explore hub at `/explore`
-- **Mood check** — Freeform mood updates (soft 8/day cap); partners send one-tap cheer chips
+- **Mood check** — Freeform mood updates (4h cooldown · soft 8/day cap); partners send one-tap cheer chips
 - **No judgement zone** — Creator toggle: soft misses vs system call-outs
 - **Leaderboards** — On by default for vows/pacts; creator can hide
 - **Streaks & progress** — Streak counters and pact leaderboards

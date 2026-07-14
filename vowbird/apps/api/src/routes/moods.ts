@@ -1,6 +1,7 @@
 import {
   ENCOURAGEMENT_LABELS,
   MAX_MOOD_UPDATES_PER_DAY,
+  MOOD_UPDATE_COOLDOWN_HOURS,
   createEncouragementSchema,
   createMoodUpdateSchema,
   zodErrorToMessage,
@@ -88,6 +89,24 @@ export async function moodRoutes(app: FastifyInstance) {
       return reply.status(429).send({
         error: `Mood update limit reached (${MAX_MOOD_UPDATES_PER_DAY}/day). Try again tomorrow.`,
       });
+    }
+
+    const latest = await prisma.moodUpdate.findFirst({
+      where: { userId: request.userId! },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+    if (latest) {
+      const cooldownMs = MOOD_UPDATE_COOLDOWN_HOURS * 60 * 60 * 1000;
+      const elapsed = Date.now() - latest.createdAt.getTime();
+      if (elapsed < cooldownMs) {
+        const nextAllowedAt = new Date(latest.createdAt.getTime() + cooldownMs);
+        const hoursLeft = Math.ceil((cooldownMs - elapsed) / (60 * 60 * 1000));
+        return reply.status(429).send({
+          error: `Give it a little space — you can share another mood in about ${hoursLeft} hour${hoursLeft === 1 ? "" : "s"} (${MOOD_UPDATE_COOLDOWN_HOURS}h between updates).`,
+          nextAllowedAt: nextAllowedAt.toISOString(),
+        });
+      }
     }
 
     const moodUpdate = await prisma.moodUpdate.create({
