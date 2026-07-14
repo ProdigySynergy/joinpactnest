@@ -5,6 +5,7 @@ import {
   joinByCodeSchema,
   parseDateOnly,
   slugify,
+  updatePactSettingsSchema,
 } from "@vowbird/shared";
 import { sanitizeUserForOthers } from "../lib/auth";
 import { prisma } from "../lib/prisma";
@@ -58,6 +59,8 @@ export async function pactRoutes(app: FastifyInstance) {
         startDate: parseDateOnly(data.startDate),
         endDate: data.endDate ? parseDateOnly(data.endDate) : null,
         inviteCode,
+        noJudgementZone: data.noJudgementZone,
+        leaderboardEnabled: data.leaderboardEnabled,
         members: {
           create: {
             userId: request.userId!,
@@ -120,7 +123,7 @@ export async function pactRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: "Private pact" });
     }
 
-    const leaderboard = await getPactLeaderboard(id);
+    const leaderboard = pact.leaderboardEnabled ? await getPactLeaderboard(id) : [];
 
     return {
       pact: {
@@ -131,6 +134,7 @@ export async function pactRoutes(app: FastifyInstance) {
         })),
       },
       leaderboard,
+      leaderboardEnabled: pact.leaderboardEnabled,
     };
   });
 
@@ -141,12 +145,25 @@ export async function pactRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: "Pact not found" });
     }
 
-    const body = request.body as Record<string, unknown>;
+    const parsed = updatePactSettingsSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: parsed.error.flatten() });
+    }
+
+    const data = parsed.data;
     const updated = await prisma.pact.update({
       where: { id },
       data: {
-        title: body.title as string | undefined,
-        description: body.description as string | undefined,
+        title: data.title,
+        description: data.description,
+        noJudgementZone: data.noJudgementZone,
+        leaderboardEnabled: data.leaderboardEnabled,
+        endDate:
+          data.endDate === undefined
+            ? undefined
+            : data.endDate === null
+              ? null
+              : parseDateOnly(data.endDate),
       },
     });
     return { pact: updated };

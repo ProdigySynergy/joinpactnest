@@ -32,6 +32,8 @@ export async function vowRoutes(app: FastifyInstance) {
         startDate: parseDateOnly(data.startDate),
         endDate: data.endDate ? parseDateOnly(data.endDate) : null,
         visibility: data.visibility,
+        noJudgementZone: data.noJudgementZone,
+        leaderboardEnabled: data.leaderboardEnabled,
       },
     });
     return reply.status(201).send({ vow });
@@ -70,8 +72,14 @@ export async function vowRoutes(app: FastifyInstance) {
     const vow = await prisma.vow.update({
       where: { id },
       data: {
-        ...data,
+        title: data.title,
+        reason: data.reason,
         category: data.category as never | undefined,
+        frequencyType: data.frequencyType,
+        targetCountPerWeek: data.targetCountPerWeek,
+        visibility: data.visibility,
+        noJudgementZone: data.noJudgementZone,
+        leaderboardEnabled: data.leaderboardEnabled,
         startDate: data.startDate ? parseDateOnly(data.startDate) : undefined,
         endDate: data.endDate ? parseDateOnly(data.endDate) : data.endDate === null ? null : undefined,
       },

@@ -4,6 +4,7 @@ import { sanitizeUserForOthers } from "../lib/auth";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
 import { canCreateMatch, runMatching } from "../services/matching";
+import { calculateVowProgress } from "../services/progress";
 import { assertNotSuspended } from "../services/safety";
 
 export async function partnerRoutes(app: FastifyInstance) {
@@ -122,6 +123,30 @@ export async function partnerRoutes(app: FastifyInstance) {
     }
 
     const partner = match.userAId === request.userId ? match.userB : match.userA;
+
+    let leaderboard: Array<{
+      user: ReturnType<typeof sanitizeUserForOthers>;
+      currentStreak: number;
+      completionPercentage: number;
+    }> = [];
+
+    if (match.vow.leaderboardEnabled) {
+      const aProgress = await calculateVowProgress(match.vowId, match.userAId);
+      const bProgress = await calculateVowProgress(match.vowId, match.userBId);
+      leaderboard = [
+        {
+          user: sanitizeUserForOthers(match.userA),
+          currentStreak: aProgress.currentStreak,
+          completionPercentage: aProgress.completionPercentage,
+        },
+        {
+          user: sanitizeUserForOthers(match.userB),
+          currentStreak: bProgress.currentStreak,
+          completionPercentage: bProgress.completionPercentage,
+        },
+      ].sort((x, y) => y.currentStreak - x.currentStreak || y.completionPercentage - x.completionPercentage);
+    }
+
     return {
       match: {
         ...match,
@@ -129,6 +154,9 @@ export async function partnerRoutes(app: FastifyInstance) {
         userA: sanitizeUserForOthers(match.userA),
         userB: sanitizeUserForOthers(match.userB),
       },
+      leaderboard,
+      leaderboardEnabled: match.vow.leaderboardEnabled,
+      noJudgementZone: match.vow.noJudgementZone,
     };
   });
 

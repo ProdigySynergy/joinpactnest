@@ -12,6 +12,7 @@ import {
 import { validateVeiledContent } from "../services/safety";
 import { saveUpload } from "../services/upload";
 import { logNotification } from "../services/notifications";
+import { missMessage } from "../services/accountability";
 
 export async function checkInRoutes(app: FastifyInstance) {
   app.post("/check-ins", { preHandler: authenticate }, async (request, reply) => {
@@ -77,18 +78,65 @@ export async function checkInRoutes(app: FastifyInstance) {
         },
       });
 
-      const matches = await prisma.partnerMatch.findMany({
-        where: {
-          status: "ACTIVE",
-          OR: [{ userAId: request.userId! }, { userBId: request.userId! }],
-        },
-      });
-      for (const m of matches) {
-        const partnerId = m.userAId === request.userId ? m.userBId : m.userAId;
-        await logNotification(partnerId, "partnerCheckedIn", "Your partner checked in!");
+      let accountability: ReturnType<typeof missMessage> | null = null;
+      const displayName =
+        user.profileMode === "VEILED" ? user.anonymousAlias || "Partner" : user.name;
+
+      if (data.status === "MISSED") {
+        if (data.vowId) {
+          const vow = await prisma.vow.findUniqueOrThrow({ where: { id: data.vowId } });
+          accountability = missMessage({
+            noJudgementZone: vow.noJudgementZone,
+            displayName,
+            context: "vow",
+          });
+          const matches = await prisma.partnerMatch.findMany({
+            where: { vowId: data.vowId, status: "ACTIVE" },
+          });
+          for (const m of matches) {
+            const partnerId = m.userAId === request.userId ? m.userBId : m.userAId;
+            const partnerMsg = missMessage({
+              noJudgementZone: vow.noJudgementZone,
+              displayName,
+              context: "partner",
+            });
+            if (partnerMsg.message) {
+              await logNotification(partnerId, partnerMsg.type, partnerMsg.message);
+            }
+          }
+          if (accountability.message) {
+            await logNotification(request.userId!, accountability.type, accountability.message);
+          }
+        } else if (data.pactId) {
+          const pact = await prisma.pact.findUniqueOrThrow({ where: { id: data.pactId } });
+          accountability = missMessage({
+            noJudgementZone: pact.noJudgementZone,
+            displayName,
+            context: "pact",
+          });
+          const members = await prisma.pactMember.findMany({
+            where: { pactId: data.pactId, leftAt: null, userId: { not: request.userId! } },
+          });
+          for (const m of members) {
+            if (accountability.message) {
+              await logNotification(m.userId, accountability.type, accountability.message);
+            }
+          }
+        }
+      } else {
+        const matches = await prisma.partnerMatch.findMany({
+          where: {
+            status: "ACTIVE",
+            OR: [{ userAId: request.userId! }, { userBId: request.userId! }],
+          },
+        });
+        for (const m of matches) {
+          const partnerId = m.userAId === request.userId ? m.userBId : m.userAId;
+          await logNotification(partnerId, "partnerCheckedIn", "Your partner checked in!");
+        }
       }
 
-      return reply.status(201).send({ checkIn });
+      return reply.status(201).send({ checkIn, accountability });
     } catch {
       return reply.status(409).send({ error: "Check-in already exists for this date" });
     }
@@ -180,7 +228,8 @@ export async function checkInRoutes(app: FastifyInstance) {
     if (!member) return reply.status(403).send({ error: "Not a member" });
 
     const progress = await calculatePactProgress(id, request.userId!);
-    const leaderboard = await getPactLeaderboard(id);
-    return { progress, leaderboard };
+    const pact = await prisma.pact.findUniqueOrThrow({ where: { id } });
+    const leaderboard = pact.leaderboardEnabled ? await getPactLeaderboard(id) : [];
+    return { progress, leaderboard, leaderboardEnabled: pact.leaderboardEnabled };
   });
 }

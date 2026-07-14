@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { MoodFeed } from "@/components/MoodFeed";
 import { NavBar } from "@/components/NavBar";
 import { RequireAuth } from "@/components/RequireAuth";
 import { api } from "@/lib/api";
@@ -14,7 +15,23 @@ export default function MatchDetailPage() {
 
   const { data } = useQuery({
     queryKey: ["match", id],
-    queryFn: () => api<{ match: { id: string; status: string; matchMode: string; partner: { displayName: string; id: string }; vow: { title: string; id: string } } }>(`/matches/${id}`),
+    queryFn: () =>
+      api<{
+        match: {
+          id: string;
+          status: string;
+          matchMode: string;
+          partner: { displayName: string; id: string };
+          vow: { title: string; id: string; noJudgementZone?: boolean };
+        };
+        leaderboard: Array<{
+          user: { displayName: string };
+          currentStreak: number;
+          completionPercentage: number;
+        }>;
+        leaderboardEnabled: boolean;
+        noJudgementZone: boolean;
+      }>(`/matches/${id}`),
   });
 
   const match = data?.match;
@@ -34,33 +51,67 @@ export default function MatchDetailPage() {
   return (
     <RequireAuth>
       <NavBar />
-      <main className="mx-auto max-w-2xl px-4 py-8">
+      <main className="mx-auto max-w-2xl space-y-6 px-4 py-8">
         {match && (
-          <div className="card">
-            <span className="badge">{match.matchMode} match</span>
-            <h1 className="mt-3 text-2xl font-bold">{match.partner.displayName}</h1>
-            <p className="mt-2 text-navy/70">Partner for: {match.vow.title}</p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href={`/letters/new?partnerMatchId=${id}&recipientId=${match.partner.id}`} className="btn-primary">
-                Write letter
-              </Link>
-              <Link href={`/vows/${match.vow.id}`} className="btn-secondary">View vow</Link>
-              <Link
-                href={`/safety?reportUser=${match.partner.id}&name=${encodeURIComponent(match.partner.displayName)}`}
-                className="btn-danger"
-              >
-                Report user
-              </Link>
-              <Link
-                href={`/safety?blockUser=${match.partner.id}&reportUser=${match.partner.id}&name=${encodeURIComponent(match.partner.displayName)}`}
-                className="btn-danger"
-              >
-                Block
-              </Link>
-              <button onClick={rematch} className="btn-secondary">Rematch</button>
-              <button onClick={endMatch} className="text-sm text-red-600">End match</button>
+          <>
+            <div className="card">
+              <span className="badge">{match.matchMode} match</span>
+              {data?.noJudgementZone && (
+                <span className="badge ml-2 border-sage/40 bg-sage/15 text-sage">No judgement</span>
+              )}
+              <h1 className="mt-3 text-2xl font-bold">{match.partner.displayName}</h1>
+              <p className="mt-2 text-navy/70">Partner for: {match.vow.title}</p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href={`/letters/new?partnerMatchId=${id}&recipientId=${match.partner.id}`}
+                  className="btn-primary"
+                >
+                  Write letter
+                </Link>
+                <Link href={`/vows/${match.vow.id}`} className="btn-secondary">
+                  View vow
+                </Link>
+                <Link
+                  href={`/safety?reportUser=${match.partner.id}&name=${encodeURIComponent(match.partner.displayName)}`}
+                  className="btn-danger"
+                >
+                  Report user
+                </Link>
+                <Link
+                  href={`/safety?blockUser=${match.partner.id}&reportUser=${match.partner.id}&name=${encodeURIComponent(match.partner.displayName)}`}
+                  className="btn-danger"
+                >
+                  Block
+                </Link>
+                <button onClick={rematch} className="btn-secondary">
+                  Rematch
+                </button>
+                <button onClick={endMatch} className="text-sm text-red-600">
+                  End match
+                </button>
+              </div>
             </div>
-          </div>
+
+            {data?.leaderboardEnabled && (data.leaderboard?.length ?? 0) > 0 && (
+              <div className="card">
+                <h2 className="font-semibold">Partner leaderboard</h2>
+                <div className="mt-4 space-y-2">
+                  {data.leaderboard.map((l, i) => (
+                    <div key={i} className="flex justify-between text-sm">
+                      <span>
+                        #{i + 1} {l.user.displayName}
+                      </span>
+                      <span className="streak">
+                        🔥 {l.currentStreak} · {l.completionPercentage}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <MoodFeed context={{ partnerMatchId: id }} />
+          </>
         )}
       </main>
     </RequireAuth>

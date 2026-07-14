@@ -29,6 +29,46 @@ export const REACTION_TYPES = [
   "KEEP_GOING",
 ] as const;
 
+export const MOOD_TYPES = [
+  "STRUGGLING",
+  "OUT_OF_IT",
+  "OKAY",
+  "FOCUSED",
+  "MOTIVATED",
+  "PROUD",
+] as const;
+
+export const MOOD_LABELS: Record<(typeof MOOD_TYPES)[number], string> = {
+  STRUGGLING: "Struggling",
+  OUT_OF_IT: "Out of it",
+  OKAY: "Okay",
+  FOCUSED: "Focused",
+  MOTIVATED: "Motivated",
+  PROUD: "Proud",
+};
+
+/** One-tap cheer chips for partners (optional short note allowed). */
+export const ENCOURAGEMENT_STICKERS = [
+  "KEEP_GOING",
+  "PROUD_OF_YOU",
+  "YOUVE_GOT_THIS",
+  "ONE_STEP",
+  "BREATHING_WITH_YOU",
+  "ROOTING_FOR_YOU",
+] as const;
+
+export const ENCOURAGEMENT_LABELS: Record<(typeof ENCOURAGEMENT_STICKERS)[number], string> = {
+  KEEP_GOING: "Keep going",
+  PROUD_OF_YOU: "Proud of you",
+  YOUVE_GOT_THIS: "You've got this",
+  ONE_STEP: "One step at a time",
+  BREATHING_WITH_YOU: "Breathing with you",
+  ROOTING_FOR_YOU: "Rooting for you",
+};
+
+/** Soft daily cap for freeform mood updates. */
+export const MAX_MOOD_UPDATES_PER_DAY = 8;
+
 export const VEILED_ALIASES = [
   "Quiet Falcon",
   "Blue Lantern",

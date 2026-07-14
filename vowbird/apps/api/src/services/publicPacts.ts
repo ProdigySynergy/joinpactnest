@@ -116,10 +116,13 @@ export async function getPublicPactBySlug(slug: string) {
       activeThisWeek,
       topStreak,
     },
-    leaders: leaderboard.slice(0, 5).map((row) => ({
-      displayName: row.user.displayName,
-      currentStreak: row.currentStreak,
-      completionPercentage: row.completionPercentage,
-    })),
+    leaders: pact.leaderboardEnabled
+      ? leaderboard.slice(0, 5).map((row) => ({
+          displayName: row.user.displayName,
+          currentStreak: row.currentStreak,
+          completionPercentage: row.completionPercentage,
+        }))
+      : [],
+    leaderboardEnabled: pact.leaderboardEnabled,
   };
 }

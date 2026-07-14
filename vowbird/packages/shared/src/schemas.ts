@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { REACTION_TYPES, TONE_OPTIONS, VOW_CATEGORIES } from "./constants";
+import {
+  ENCOURAGEMENT_STICKERS,
+  MOOD_TYPES,
+  REACTION_TYPES,
+  TONE_OPTIONS,
+  VOW_CATEGORIES,
+} from "./constants";
 
 export const registerSchema = z.object({
   name: z.string().min(2).max(100),
@@ -38,6 +44,8 @@ export const createVowSchema = z.object({
   startDate: z.string(),
   endDate: z.string().optional(),
   visibility: z.enum(["PRIVATE", "PARTNER", "GROUP_PUBLIC"]).default("PRIVATE"),
+  noJudgementZone: z.boolean().default(false),
+  leaderboardEnabled: z.boolean().default(true),
 });
 
 export const updateVowSchema = createVowSchema.partial();
@@ -54,6 +62,34 @@ export const createPactSchema = z.object({
   checkInEndTime: z.string().regex(/^\d{2}:\d{2}$/).default("23:59"),
   startDate: z.string(),
   endDate: z.string().optional(),
+  noJudgementZone: z.boolean().default(false),
+  leaderboardEnabled: z.boolean().default(true),
+});
+
+export const updatePactSettingsSchema = z.object({
+  title: z.string().min(3).max(200).optional(),
+  description: z.string().max(2000).optional(),
+  noJudgementZone: z.boolean().optional(),
+  leaderboardEnabled: z.boolean().optional(),
+  endDate: z.string().nullable().optional(),
+});
+
+export const createMoodUpdateSchema = z
+  .object({
+    mood: z.enum(MOOD_TYPES as unknown as [string, ...string[]]),
+    note: z.string().max(280).optional(),
+    vowId: z.string().optional(),
+    pactId: z.string().optional(),
+    partnerMatchId: z.string().optional(),
+  })
+  .refine((d) => d.vowId || d.pactId || d.partnerMatchId, {
+    message: "vowId, pactId, or partnerMatchId required",
+  });
+
+export const createEncouragementSchema = z.object({
+  moodUpdateId: z.string(),
+  sticker: z.enum(ENCOURAGEMENT_STICKERS as unknown as [string, ...string[]]),
+  note: z.string().max(140).optional(),
 });
 
 export const joinByCodeSchema = z.object({

@@ -100,6 +100,24 @@ enum CheckInStatus {
   MISSED
 }
 
+enum MoodType {
+  STRUGGLING
+  OUT_OF_IT
+  OKAY
+  FOCUSED
+  MOTIVATED
+  PROUD
+}
+
+enum EncouragementSticker {
+  KEEP_GOING
+  PROUD_OF_YOU
+  YOUVE_GOT_THIS
+  ONE_STEP
+  BREATHING_WITH_YOU
+  ROOTING_FOR_YOU
+}
+
 enum LetterType {
   PARTNER_LETTER
   FUTURE_SELF
@@ -167,6 +185,9 @@ model User {
   receivedLetters      Letter[]            @relation("LetterRecipient")
   roomPosts            RoomPost[]
   reactions            Reaction[]
+  moodUpdates          MoodUpdate[]
+  encouragementsSent   Encouragement[]     @relation("EncouragementFrom")
+  encouragementsReceived Encouragement[]   @relation("EncouragementTo")
   reportsMade          Report[]            @relation("ReportReporter")
   reportsAgainst       Report[]            @relation("ReportReportedUser")
   reportComments       ReportComment[]
@@ -193,6 +214,8 @@ model Vow {
   endDate            DateTime?      @db.Date
   status             VowStatus      @default(ACTIVE)
   visibility         VowVisibility  @default(PRIVATE)
+  noJudgementZone    Boolean        @default(false)
+  leaderboardEnabled Boolean        @default(true)
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
@@ -201,6 +224,7 @@ model Vow {
   partnerMatches     PartnerMatch[]
   checkIns           CheckIn[]
   letters            Letter[]
+  moodUpdates        MoodUpdate[]
 
   @@index([userId])
   @@index([status])
@@ -224,6 +248,8 @@ model Pact {
   endDate              DateTime?          @db.Date
   inviteCode           String             @unique
   status               PactStatus         @default(ACTIVE)
+  noJudgementZone      Boolean            @default(false)
+  leaderboardEnabled   Boolean            @default(true)
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
@@ -232,6 +258,7 @@ model Pact {
   checkIns             CheckIn[]
   letters              Letter[]
   roomPosts            RoomPost[]
+  moodUpdates          MoodUpdate[]
 
   @@index([ownerId])
   @@index([privacy])
@@ -290,11 +317,53 @@ model PartnerMatch {
   userA     User               @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
   userB     User               @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
   letters   Letter[]
+  moodUpdates MoodUpdate[]
 
   @@index([userAId])
   @@index([userBId])
   @@index([vowId])
   @@index([status])
+}
+
+model MoodUpdate {
+  id             String        @id @default(cuid())
+  userId         String
+  vowId          String?
+  pactId         String?
+  partnerMatchId String?
+  mood           MoodType
+  note           String?       @db.VarChar(280)
+  createdAt      DateTime      @default(now())
+
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vow            Vow?          @relation(fields: [vowId], references: [id], onDelete: Cascade)
+  pact           Pact?         @relation(fields: [pactId], references: [id], onDelete: Cascade)
+  partnerMatch   PartnerMatch? @relation(fields: [partnerMatchId], references: [id], onDelete: Cascade)
+  encouragements Encouragement[]
+
+  @@index([userId])
+  @@index([vowId])
+  @@index([pactId])
+  @@index([partnerMatchId])
+  @@index([createdAt])
+}
+
+model Encouragement {
+  id           String                @id @default(cuid())
+  fromUserId   String
+  toUserId     String
+  moodUpdateId String
+  sticker      EncouragementSticker
+  note         String?               @db.VarChar(140)
+  createdAt    DateTime              @default(now())
+
+  fromUser     User                  @relation("EncouragementFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser       User                  @relation("EncouragementTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  moodUpdate   MoodUpdate            @relation(fields: [moodUpdateId], references: [id], onDelete: Cascade)
+
+  @@index([moodUpdateId])
+  @@index([fromUserId])
+  @@index([toUserId])
 }
 
 model CheckIn {

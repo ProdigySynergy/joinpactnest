@@ -167,6 +167,9 @@ See [docs/TESTING.md](docs/TESTING.md) for package-level commands and how to add
 - **Letters** — Partner letters, future-self, group reflections
 - **Pacts** — Public, invite-only, and private circles
 - **Public pact pages** — Shareable `/p/[slug]` profiles (SEO + social), explore hub at `/explore`
+- **Mood check** — Freeform mood updates (soft 8/day cap); partners send one-tap cheer chips
+- **No judgement zone** — Creator toggle: soft misses vs system call-outs
+- **Leaderboards** — On by default for vows/pacts; creator can hide
 - **Streaks & progress** — Streak counters and pact leaderboards
 - **Safety** — Report, block, content filtering in Veiled Mode
 - **Admin dashboard** — User moderation, reports, stats
@@ -181,12 +184,21 @@ See the product spec for the full endpoint list. Key routes:
 
 - `POST /auth/register`, `POST /auth/login`
 - `GET/POST /vows`, `POST /check-ins`
+- `POST /moods`, `GET /moods?vowId|pactId|partnerMatchId=`, `POST /encouragements`
 - `POST /partner-requests`, `GET /matches/me`
 - `POST/GET /letters`, `POST/GET /pacts`
 - `GET /public/pacts`, `GET /public/pacts/:slug` (no auth — indexed share pages)
 - `POST /reports`, `GET /reports/open?reportedUserId=`, `POST /reports/:id/comments` (max 2 follow-ups while OPEN)
 - `POST /blocks`, `GET /blocks/me`
 - `GET /admin/stats` (admin only)
+
+### Mood & accountability (assumptions)
+
+- Mood updates are freeform (any time), capped at **8 per user per UTC day**.
+- Encouragement prefers one-tap stickers (`Keep going`, etc.); optional short note (≤140). Longer encouragement still uses Letters.
+- `noJudgementZone=true` → gentle miss messages (no harsh call-outs). `false` → call-out notifications to partners/pact members on `MISSED` check-ins.
+- `leaderboardEnabled` defaults `true`; owners can turn off. Public pact pages hide the leaders list when off (aggregate stats still computed).
+- Vow create accepts labeled **start date** + optional **end date**.
 
 ### Public pacts (assumptions)
 
