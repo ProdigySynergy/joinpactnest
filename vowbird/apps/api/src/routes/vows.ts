@@ -53,7 +53,11 @@ export async function vowRoutes(app: FastifyInstance) {
     if (!vow || vow.userId !== request.userId) {
       return reply.status(404).send({ error: "Vow not found" });
     }
-    return { vow };
+    const activeMatch = await prisma.partnerMatch.findFirst({
+      where: { vowId: id, status: "ACTIVE" },
+      select: { id: true },
+    });
+    return { vow, activePartnerMatchId: activeMatch?.id ?? null };
   });
 
   app.patch("/vows/:id", { preHandler: authenticate }, async (request, reply) => {

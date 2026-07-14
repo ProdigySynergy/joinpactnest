@@ -85,8 +85,10 @@ enum PactMemberRole {
 
 enum PartnerRequestStatus {
   WAITING
+  PENDING
   MATCHED
   CANCELLED
+  DECLINED
 }
 
 enum ProfileModePreference {
@@ -192,7 +194,8 @@ model User {
   vows                 Vow[]
   ownedPacts           Pact[]              @relation("PactOwner")
   pactMembers          PactMember[]
-  partnerRequests      PartnerRequest[]
+  partnerRequests      PartnerRequest[]    @relation("PartnerRequestFrom")
+  incomingPartnerRequests PartnerRequest[] @relation("PartnerRequestTarget")
   matchesAsA           PartnerMatch[]      @relation("MatchUserA")
   matchesAsB           PartnerMatch[]      @relation("MatchUserB")
   checkIns             CheckIn[]
@@ -307,6 +310,8 @@ model PartnerRequest {
   id                    String                @id @default(cuid())
   userId                String
   vowId                 String
+  /// When set, this is a directed invite (status PENDING) rather than auto-queue (WAITING).
+  targetUserId          String?
   category              VowCategory
   frequencyType         FrequencyType
   timezone              String
@@ -317,10 +322,12 @@ model PartnerRequest {
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
 
-  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  User                  @relation("PartnerRequestFrom", fields: [userId], references: [id], onDelete: Cascade)
+  targetUser            User?                 @relation("PartnerRequestTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
   vow                   Vow                   @relation(fields: [vowId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([targetUserId])
   @@index([status])
   @@index([category])
 }

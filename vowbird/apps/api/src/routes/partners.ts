@@ -3,9 +3,9 @@ import { partnerRequestSchema, zodErrorToMessage } from "@vowbird/shared";
 import { sanitizeUserForOthers } from "../lib/auth";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
-import { canCreateMatch, runMatching } from "../services/matching";
+import { canCreateMatch, runMatching, vowHasActivePartner } from "../services/matching";
 import { calculateVowProgress } from "../services/progress";
-import { assertNotSuspended } from "../services/safety";
+import { areUsersBlocked, assertNotSuspended } from "../services/safety";
 
 export async function partnerRoutes(app: FastifyInstance) {
   app.post("/partner-requests", { preHandler: authenticate }, async (request, reply) => {
@@ -26,11 +26,63 @@ export async function partnerRoutes(app: FastifyInstance) {
     if (!vow || vow.userId !== request.userId) {
       return reply.status(404).send({ error: "Vow not found" });
     }
+    if (vow.status !== "ACTIVE") {
+      return reply.status(400).send({ error: "Vow must be active" });
+    }
+
+    if (await vowHasActivePartner(vow.id)) {
+      return reply.status(409).send({ error: "This vow already has an active partner" });
+    }
 
     const user = await prisma.user.findUniqueOrThrow({ where: { id: request.userId! } });
+    const targetUserId = parsed.data.targetUserId;
+
+    if (targetUserId) {
+      if (targetUserId === request.userId) {
+        return reply.status(400).send({ error: "Cannot partner with yourself" });
+      }
+
+      const target = await prisma.user.findUnique({ where: { id: targetUserId } });
+      if (!target || target.isSuspended) {
+        return reply.status(404).send({ error: "User not found" });
+      }
+
+      if (await areUsersBlocked(request.userId!, targetUserId)) {
+        return reply.status(403).send({ error: "Cannot request this user" });
+      }
+
+      const existingPending = await prisma.partnerRequest.findFirst({
+        where: {
+          userId: request.userId!,
+          vowId: vow.id,
+          targetUserId,
+          status: "PENDING",
+        },
+      });
+      if (existingPending) {
+        return reply.status(409).send({ error: "Invite already pending for this person" });
+      }
+
+      const partnerRequest = await prisma.partnerRequest.create({
+        data: {
+          userId: request.userId!,
+          vowId: vow.id,
+          targetUserId,
+          category: vow.category,
+          frequencyType: vow.frequencyType,
+          timezone: user.timezone,
+          preferredCheckInTime: user.preferredCheckInTime,
+          profileModePreference: parsed.data.profileModePreference,
+          tonePreference: parsed.data.tonePreference,
+          status: "PENDING",
+        },
+      });
+
+      return reply.status(201).send({ partnerRequest });
+    }
 
     const existing = await prisma.partnerRequest.findFirst({
-      where: { userId: request.userId!, vowId: vow.id, status: "WAITING" },
+      where: { userId: request.userId!, vowId: vow.id, status: "WAITING", targetUserId: null },
     });
     if (existing) {
       return reply.status(409).send({ error: "Already waiting for a match on this vow" });
@@ -46,6 +98,7 @@ export async function partnerRoutes(app: FastifyInstance) {
         preferredCheckInTime: user.preferredCheckInTime,
         profileModePreference: parsed.data.profileModePreference,
         tonePreference: parsed.data.tonePreference,
+        status: "WAITING",
       },
     });
 
@@ -57,10 +110,98 @@ export async function partnerRoutes(app: FastifyInstance) {
   app.get("/partner-requests/me", { preHandler: authenticate }, async (request) => {
     const requests = await prisma.partnerRequest.findMany({
       where: { userId: request.userId! },
-      include: { vow: true },
+      include: { vow: true, targetUser: true },
       orderBy: { createdAt: "desc" },
     });
-    return { requests };
+    return {
+      requests: requests.map((r) => ({
+        ...r,
+        targetUser: r.targetUser ? sanitizeUserForOthers(r.targetUser) : null,
+      })),
+    };
+  });
+
+  app.get("/partner-requests/incoming", { preHandler: authenticate }, async (request) => {
+    const requests = await prisma.partnerRequest.findMany({
+      where: { targetUserId: request.userId!, status: "PENDING" },
+      include: { vow: true, user: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return {
+      requests: requests.map((r) => ({
+        id: r.id,
+        status: r.status,
+        tonePreference: r.tonePreference,
+        category: r.category,
+        frequencyType: r.frequencyType,
+        createdAt: r.createdAt,
+        vow: { id: r.vow.id, title: r.vow.title, category: r.vow.category },
+        fromUser: sanitizeUserForOthers(r.user),
+      })),
+    };
+  });
+
+  app.post("/partner-requests/:id/accept", { preHandler: authenticate }, async (request, reply) => {
+    await assertNotSuspended(request.userId!);
+    const { id } = request.params as { id: string };
+    const req = await prisma.partnerRequest.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+    if (!req || req.targetUserId !== request.userId || req.status !== "PENDING") {
+      return reply.status(404).send({ error: "Invite not found" });
+    }
+
+    if (await vowHasActivePartner(req.vowId)) {
+      return reply.status(409).send({ error: "That vow already has an active partner" });
+    }
+    if (!(await canCreateMatch(req.userId)) || !(await canCreateMatch(request.userId!))) {
+      return reply.status(403).send({ error: "Free plan limit: 1 active partner match." });
+    }
+    if (await areUsersBlocked(req.userId, request.userId!)) {
+      return reply.status(403).send({ error: "Cannot accept this invite" });
+    }
+
+    const matchMode =
+      req.user.profileMode === "VEILED" ||
+      (await prisma.user.findUniqueOrThrow({ where: { id: request.userId! } })).profileMode === "VEILED"
+        ? "VEILED"
+        : "OPEN";
+
+    const [match] = await prisma.$transaction([
+      prisma.partnerMatch.create({
+        data: {
+          vowId: req.vowId,
+          userAId: req.userId,
+          userBId: request.userId!,
+          matchMode,
+        },
+      }),
+      prisma.partnerRequest.update({
+        where: { id: req.id },
+        data: { status: "MATCHED" },
+      }),
+      // Clear auto-queue for this vow if any
+      prisma.partnerRequest.updateMany({
+        where: { vowId: req.vowId, status: "WAITING", targetUserId: null },
+        data: { status: "CANCELLED" },
+      }),
+    ]);
+
+    return { match };
+  });
+
+  app.post("/partner-requests/:id/decline", { preHandler: authenticate }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const req = await prisma.partnerRequest.findUnique({ where: { id } });
+    if (!req || req.targetUserId !== request.userId || req.status !== "PENDING") {
+      return reply.status(404).send({ error: "Invite not found" });
+    }
+    const updated = await prisma.partnerRequest.update({
+      where: { id },
+      data: { status: "DECLINED" },
+    });
+    return { partnerRequest: updated };
   });
 
   app.post("/partner-requests/:id/cancel", { preHandler: authenticate }, async (request, reply) => {
@@ -68,6 +209,9 @@ export async function partnerRoutes(app: FastifyInstance) {
     const req = await prisma.partnerRequest.findUnique({ where: { id } });
     if (!req || req.userId !== request.userId) {
       return reply.status(404).send({ error: "Request not found" });
+    }
+    if (req.status !== "WAITING" && req.status !== "PENDING") {
+      return reply.status(400).send({ error: "Request cannot be cancelled" });
     }
     const updated = await prisma.partnerRequest.update({
       where: { id },
@@ -82,6 +226,118 @@ export async function partnerRoutes(app: FastifyInstance) {
     }
     const result = await runMatching();
     return result;
+  });
+
+  /** Discover candidates for a vow: open-queue peers + people with a matching active vow. */
+  app.get("/partners/discover", { preHandler: authenticate }, async (request, reply) => {
+    const { vowId } = request.query as { vowId?: string };
+    if (!vowId) return reply.status(400).send({ error: "vowId required" });
+
+    const vow = await prisma.vow.findUnique({ where: { id: vowId } });
+    if (!vow || vow.userId !== request.userId) {
+      return reply.status(404).send({ error: "Vow not found" });
+    }
+
+    if (await vowHasActivePartner(vow.id)) {
+      return { candidates: [], vowHasPartner: true };
+    }
+
+    const blocked = await prisma.block.findMany({
+      where: {
+        OR: [{ blockerId: request.userId! }, { blockedUserId: request.userId! }],
+      },
+    });
+    const blockedIds = new Set(
+      blocked
+        .flatMap((b) => [b.blockerId, b.blockedUserId])
+        .filter((id) => id !== request.userId)
+    );
+
+    const waitingPeers = await prisma.partnerRequest.findMany({
+      where: {
+        status: "WAITING",
+        targetUserId: null,
+        category: vow.category,
+        frequencyType: vow.frequencyType,
+        userId: { not: request.userId! },
+      },
+      include: { user: true, vow: true },
+      orderBy: { createdAt: "asc" },
+      take: 40,
+    });
+
+    const similarVowUsers = await prisma.vow.findMany({
+      where: {
+        status: "ACTIVE",
+        category: vow.category,
+        frequencyType: vow.frequencyType,
+        userId: { not: request.userId! },
+      },
+      include: { user: true },
+      orderBy: { createdAt: "desc" },
+      take: 40,
+    });
+
+    const candidateVowIds = [
+      ...waitingPeers.map((p) => p.vowId),
+      ...similarVowUsers.map((v) => v.id),
+    ];
+    const vowedWithPartner = new Set(
+      (
+        await prisma.partnerMatch.findMany({
+          where: { vowId: { in: candidateVowIds }, status: "ACTIVE" },
+          select: { vowId: true },
+        })
+      ).map((m) => m.vowId)
+    );
+
+    const pendingOutgoing = await prisma.partnerRequest.findMany({
+      where: {
+        userId: request.userId!,
+        vowId: vow.id,
+        status: "PENDING",
+        targetUserId: { not: null },
+      },
+      select: { targetUserId: true },
+    });
+    const pendingTargetIds = new Set(pendingOutgoing.map((r) => r.targetUserId!).filter(Boolean));
+
+    type Candidate = {
+      user: ReturnType<typeof sanitizeUserForOthers>;
+      source: "queue" | "similar_vow";
+      theirVow: { id: string; title: string };
+      alreadyInvited: boolean;
+    };
+
+    const byUser = new Map<string, Candidate>();
+
+    for (const peer of waitingPeers) {
+      if (blockedIds.has(peer.userId) || peer.user.isSuspended) continue;
+      if (vowedWithPartner.has(peer.vowId)) continue;
+      byUser.set(peer.userId, {
+        user: sanitizeUserForOthers(peer.user),
+        source: "queue",
+        theirVow: { id: peer.vow.id, title: peer.vow.title },
+        alreadyInvited: pendingTargetIds.has(peer.userId),
+      });
+    }
+
+    for (const v of similarVowUsers) {
+      if (byUser.has(v.userId)) continue;
+      if (blockedIds.has(v.userId) || v.user.isSuspended) continue;
+      if (vowedWithPartner.has(v.id)) continue;
+      byUser.set(v.userId, {
+        user: sanitizeUserForOthers(v.user),
+        source: "similar_vow",
+        theirVow: { id: v.id, title: v.title },
+        alreadyInvited: pendingTargetIds.has(v.userId),
+      });
+    }
+
+    return {
+      candidates: Array.from(byUser.values()).slice(0, 30),
+      vowHasPartner: false,
+    };
   });
 
   app.get("/matches/me", { preHandler: authenticate }, async (request) => {
@@ -123,6 +379,7 @@ export async function partnerRoutes(app: FastifyInstance) {
     }
 
     const partner = match.userAId === request.userId ? match.userB : match.userA;
+    const isVowOwner = match.vow.userId === request.userId;
 
     let leaderboard: Array<{
       user: ReturnType<typeof sanitizeUserForOthers>;
@@ -158,6 +415,7 @@ export async function partnerRoutes(app: FastifyInstance) {
       leaderboard,
       leaderboardEnabled: match.vow.leaderboardEnabled,
       noJudgementZone: match.vow.noJudgementZone,
+      isVowOwner,
     };
   });
 
@@ -189,8 +447,17 @@ export async function partnerRoutes(app: FastifyInstance) {
       data: { status: "ENDED", endedAt: new Date() },
     });
 
+    if (match.vowId && !(await canCreateMatch(request.userId!))) {
+      return { partnerRequest: null, message: "Match ended. Free plan limit reached for a new request." };
+    }
+
     const user = await prisma.user.findUniqueOrThrow({ where: { id: request.userId! } });
     const vow = await prisma.vow.findUniqueOrThrow({ where: { id: match.vowId } });
+
+    // Only the vow owner can re-queue on this vow
+    if (vow.userId !== request.userId) {
+      return { partnerRequest: null, message: "Match ended." };
+    }
 
     const partnerRequest = await prisma.partnerRequest.create({
       data: {
@@ -202,6 +469,7 @@ export async function partnerRoutes(app: FastifyInstance) {
         preferredCheckInTime: user.preferredCheckInTime,
         profileModePreference: "EITHER",
         tonePreference: "Gentle",
+        status: "WAITING",
       },
     });
 

@@ -24,6 +24,10 @@ export async function letterRoutes(app: FastifyInstance) {
     }
 
     const data = parsed.data;
+    if (data.recipientId && data.recipientId === request.userId && data.type !== "FUTURE_SELF") {
+      return reply.status(400).send({ error: "Cannot send a letter to yourself" });
+    }
+
     const contentCheck = validateVeiledContent(`${data.subject} ${data.body}`, user.profileMode);
     if (!contentCheck.ok) {
       return reply.status(400).send({ error: contentCheck.message });
@@ -32,7 +36,7 @@ export async function letterRoutes(app: FastifyInstance) {
     const letter = await prisma.letter.create({
       data: {
         senderId: request.userId!,
-        recipientId: data.recipientId,
+        recipientId: data.type === "FUTURE_SELF" ? null : data.recipientId,
         vowId: data.vowId,
         pactId: data.pactId,
         partnerMatchId: data.partnerMatchId,

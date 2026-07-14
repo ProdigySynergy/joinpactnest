@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
 
 export type PersonSummary = {
   id: string;
@@ -13,7 +14,7 @@ export type PersonSummary = {
 type Props = {
   person: PersonSummary;
   roleLabel: string;
-  /** Hide interaction when viewing yourself */
+  /** Hide interaction when viewing yourself (also auto-detected via auth) */
   isSelf?: boolean;
   /** Authenticated mutual-match context — enables letter */
   partnerMatchId?: string;
@@ -28,6 +29,11 @@ export function PersonCard({
   partnerMatchId,
   variant = "full",
 }: Props) {
+  const { user } = useAuth();
+  const viewingSelf =
+    isSelf ||
+    (!!user && (user.id === person.id || user.username === person.username));
+
   const profileHref = `/u/${person.username}`;
   const safetyName = encodeURIComponent(person.displayName);
 
@@ -42,22 +48,24 @@ export function PersonCard({
           <p className="text-sm text-navy/50">@{person.username}</p>
           {person.tagline && <p className="mt-1 text-sm text-navy/65">{person.tagline}</p>}
         </div>
-        {!isSelf && (
+        {!viewingSelf && (
           <div className="flex flex-wrap gap-2">
             {variant === "public" ? (
               <>
                 <Link
-                  href={`/login?next=${encodeURIComponent(profileHref)}`}
+                  href={user ? profileHref : `/login?next=${encodeURIComponent(profileHref)}`}
                   className="btn-secondary py-2 text-sm"
                 >
                   View profile
                 </Link>
-                <Link
-                  href={`/register?next=${encodeURIComponent(profileHref)}`}
-                  className="btn-primary py-2 text-sm"
-                >
-                  Join to connect
-                </Link>
+                {!user && (
+                  <Link
+                    href={`/register?next=${encodeURIComponent(profileHref)}`}
+                    className="btn-primary py-2 text-sm"
+                  >
+                    Join to connect
+                  </Link>
+                )}
               </>
             ) : (
               <>
@@ -91,7 +99,7 @@ export function PersonCard({
             )}
           </div>
         )}
-        {isSelf && <p className="text-sm text-navy/50">That’s you</p>}
+        {viewingSelf && <p className="text-sm text-navy/50">That’s you</p>}
       </div>
     </div>
   );

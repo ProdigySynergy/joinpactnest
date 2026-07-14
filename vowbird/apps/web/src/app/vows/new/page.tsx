@@ -19,8 +19,6 @@ export default function NewVowPage() {
     startDate: new Date().toISOString().slice(0, 10),
     endDate: "",
     visibility: "PRIVATE",
-    noJudgementZone: false,
-    leaderboardEnabled: true,
   });
 
   async function handleSubmit(e: FormEvent) {
@@ -30,6 +28,9 @@ export default function NewVowPage() {
       const payload = {
         ...form,
         endDate: form.endDate || undefined,
+        // Partner-facing defaults; tunable later on the match page
+        noJudgementZone: false,
+        leaderboardEnabled: true,
       };
       const data = await api<{ vow: { id: string } }>("/vows", {
         method: "POST",
@@ -101,36 +102,6 @@ export default function NewVowPage() {
               onChange={(e) => setForm({ ...form, endDate: e.target.value })}
               min={form.startDate}
             />
-          </label>
-
-          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-navy/10 p-3">
-            <input
-              type="checkbox"
-              className="mt-1"
-              checked={form.noJudgementZone}
-              onChange={(e) => setForm({ ...form, noJudgementZone: e.target.checked })}
-            />
-            <span>
-              <span className="block font-medium">No judgement zone</span>
-              <span className="text-sm text-navy/60">
-                Misses get mild encouragement (or quiet). Off = system call-outs when someone slips.
-              </span>
-            </span>
-          </label>
-
-          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-navy/10 p-3">
-            <input
-              type="checkbox"
-              className="mt-1"
-              checked={form.leaderboardEnabled}
-              onChange={(e) => setForm({ ...form, leaderboardEnabled: e.target.checked })}
-            />
-            <span>
-              <span className="block font-medium">Show leaderboard</span>
-              <span className="text-sm text-navy/60">
-                On by default. Turn off if you don&apos;t want ranking with partners.
-              </span>
-            </span>
           </label>
 
           <button type="submit" className="btn-primary w-full">

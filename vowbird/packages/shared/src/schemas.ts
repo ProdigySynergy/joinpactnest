@@ -103,6 +103,8 @@ export const partnerRequestSchema = z.object({
   vowId: z.string(),
   profileModePreference: z.enum(["VEILED", "OPEN", "EITHER"]).default("EITHER"),
   tonePreference: z.enum(TONE_OPTIONS as unknown as [string, ...string[]]),
+  /** When set, send a directed invite to this user instead of joining the auto-match queue. */
+  targetUserId: z.string().optional(),
 });
 
 export const createCheckInSchema = z.object({

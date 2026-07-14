@@ -33,7 +33,7 @@ export default function MatchDetailPage() {
           matchMode: string;
           partner: Person;
           initiatedBy: Person;
-          vow: { title: string; id: string; noJudgementZone?: boolean };
+          vow: { title: string; id: string; noJudgementZone?: boolean; leaderboardEnabled?: boolean };
         };
         leaderboard: Array<{
           user: { displayName: string };
@@ -42,6 +42,7 @@ export default function MatchDetailPage() {
         }>;
         leaderboardEnabled: boolean;
         noJudgementZone: boolean;
+        isVowOwner: boolean;
       }>(`/matches/${id}`),
   });
 
@@ -59,6 +60,15 @@ export default function MatchDetailPage() {
   async function rematch() {
     await api(`/matches/${id}/rematch`, { method: "POST" });
     router.push("/matches");
+  }
+
+  async function toggleSetting(field: "noJudgementZone" | "leaderboardEnabled", value: boolean) {
+    if (!match) return;
+    await api(`/vows/${match.vow.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ [field]: value }),
+    });
+    qc.invalidateQueries({ queryKey: ["match", id] });
   }
 
   return (
@@ -98,22 +108,65 @@ export default function MatchDetailPage() {
               partnerMatchId={id}
             />
 
-            {data?.leaderboardEnabled && (data.leaderboard?.length ?? 0) > 0 && (
-              <div className="card">
-                <h2 className="font-semibold">Partner leaderboard</h2>
-                <div className="mt-4 space-y-2">
-                  {data.leaderboard.map((l, i) => (
-                    <div key={i} className="flex justify-between text-sm">
-                      <span>
-                        #{i + 1} {l.user.displayName}
-                      </span>
-                      <span className="streak">
-                        🔥 {l.currentStreak} · {l.completionPercentage}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
+            {data?.isVowOwner && (
+              <div className="card space-y-4">
+                <h2 className="font-semibold">Partner settings</h2>
+                <p className="text-sm text-navy/60">
+                  These apply to how you and your partner experience this match.
+                </p>
+                <label className="flex items-start gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={data.noJudgementZone}
+                    onChange={(e) => toggleSetting("noJudgementZone", e.target.checked)}
+                  />
+                  <span>
+                    <span className="font-medium">No judgement zone</span>
+                    <span className="mt-0.5 block text-navy/60">
+                      Misses stay gentle; no call-outs to your partner.
+                    </span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={data.leaderboardEnabled}
+                    onChange={(e) => toggleSetting("leaderboardEnabled", e.target.checked)}
+                  />
+                  <span>
+                    <span className="font-medium">Show partner leaderboard</span>
+                    <span className="mt-0.5 block text-navy/60">
+                      Compare streaks between you and your partner.
+                    </span>
+                  </span>
+                </label>
               </div>
+            )}
+
+            {data?.leaderboardEnabled ? (
+              (data.leaderboard?.length ?? 0) > 0 ? (
+                <div className="card">
+                  <h2 className="font-semibold">Partner leaderboard</h2>
+                  <div className="mt-4 space-y-2">
+                    {data.leaderboard.map((l, i) => (
+                      <div key={i} className="flex justify-between text-sm">
+                        <span>
+                          #{i + 1} {l.user.displayName}
+                        </span>
+                        <span className="streak">
+                          🔥 {l.currentStreak} · {l.completionPercentage}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="card text-sm text-navy/60">Leaderboard will appear once progress is tracked.</div>
+              )
+            ) : (
+              <div className="card text-sm text-navy/60">Partner leaderboard is turned off for this match.</div>
             )}
 
             <MoodFeed context={{ partnerMatchId: id }} />

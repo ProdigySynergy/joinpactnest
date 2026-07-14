@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useState, Suspense } from "react";
 import { NavBar } from "@/components/NavBar";
 import { RequireAuth } from "@/components/RequireAuth";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 type ReportComment = { id: string; body: string; createdAt: string };
 type OpenReport = {
@@ -17,12 +19,17 @@ type OpenReport = {
 
 function SafetyForm() {
   const params = useSearchParams();
+  const { user } = useAuth();
   const reportUserId = params.get("reportUser") || "";
   const blockUserIdParam = params.get("blockUser") || reportUserId;
   const nameHint = params.get("name") || "";
 
-  const [reportUserIdHidden] = useState(reportUserId);
-  const [blockUserId, setBlockUserId] = useState(blockUserIdParam);
+  const targetingSelf =
+    !!user &&
+    (reportUserId === user.id || blockUserIdParam === user.id);
+
+  const [reportUserIdHidden] = useState(targetingSelf ? "" : reportUserId);
+  const [blockUserId, setBlockUserId] = useState(targetingSelf ? "" : blockUserIdParam);
   const [reportedDisplayName, setReportedDisplayName] = useState(nameHint);
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
@@ -150,6 +157,18 @@ function SafetyForm() {
   const followUpsLeft = openReport
     ? Math.max(0, maxFollowUps - openReport.comments.length)
     : maxFollowUps;
+
+  if (targetingSelf) {
+    return (
+      <div className="card space-y-3">
+        <h2 className="font-semibold">That’s you</h2>
+        <p className="text-sm text-navy/70">You can’t report or block your own account.</p>
+        <Link href="/settings" className="btn-secondary inline-block text-center">
+          Go to settings
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

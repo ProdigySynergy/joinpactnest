@@ -15,7 +15,12 @@ export default function VowDetailPage() {
   const [note, setNote] = useState("");
   const [msg, setMsg] = useState("");
 
-  const { data: vowData } = useQuery({
+  const {
+    data: vowData,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["vow", id],
     queryFn: () =>
       api<{
@@ -28,8 +33,8 @@ export default function VowDetailPage() {
           startDate: string;
           endDate: string | null;
           noJudgementZone: boolean;
-          leaderboardEnabled: boolean;
         };
+        activePartnerMatchId: string | null;
       }>(`/vows/${id}`),
   });
 
@@ -39,6 +44,7 @@ export default function VowDetailPage() {
       api<{ progress: { currentStreak: number; longestStreak: number; completionPercentage: number } }>(
         `/vows/${id}/progress`
       ),
+    enabled: Boolean(vowData?.vow),
   });
 
   const { data: checkIns } = useQuery({
@@ -47,6 +53,7 @@ export default function VowDetailPage() {
       api<{ checkIns: Array<{ id: string; note: string | null; checkInDate: string; status: string }> }>(
         `/vows/${id}/check-ins`
       ),
+    enabled: Boolean(vowData?.vow),
   });
 
   async function checkIn(e: FormEvent, status: "COMPLETED" | "MISSED") {
@@ -75,20 +82,27 @@ export default function VowDetailPage() {
     }
   }
 
-  async function toggleSetting(field: "noJudgementZone" | "leaderboardEnabled", value: boolean) {
-    await api(`/vows/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ [field]: value }),
-    });
-    qc.invalidateQueries({ queryKey: ["vow", id] });
-  }
-
   const vow = vowData?.vow;
+  const activePartnerMatchId = vowData?.activePartnerMatchId;
 
   return (
     <RequireAuth>
       <NavBar />
       <main className="mx-auto max-w-4xl px-4 py-8">
+        {isLoading && <p className="text-navy/60">Loading vow…</p>}
+
+        {isError && (
+          <div className="card space-y-3">
+            <h1 className="text-xl font-bold">Vow not found</h1>
+            <p className="text-sm text-navy/70">
+              {(error as Error)?.message || "This vow doesn’t exist or isn’t yours."}
+            </p>
+            <Link href="/vows" className="btn-secondary inline-block text-center">
+              Back to your vows
+            </Link>
+          </div>
+        )}
+
         {vow && (
           <>
             <div className="mb-6">
@@ -139,33 +153,21 @@ export default function VowDetailPage() {
               </form>
 
               <div className="card space-y-4">
-                <h2 className="font-semibold">Actions & settings</h2>
+                <h2 className="font-semibold">Actions</h2>
                 <div className="flex flex-col gap-2">
-                  <Link href="/matches" className="btn-secondary text-center">
-                    Find partner
-                  </Link>
+                  {activePartnerMatchId ? (
+                    <Link href={`/matches/${activePartnerMatchId}`} className="btn-secondary text-center">
+                      View partner match
+                    </Link>
+                  ) : (
+                    <Link href={`/matches?vowId=${id}`} className="btn-secondary text-center">
+                      Find partner
+                    </Link>
+                  )}
                   <Link href={`/letters/new?vowId=${id}`} className="btn-secondary text-center">
                     Write letter
                   </Link>
                 </div>
-                <label className="flex items-start gap-3 text-sm">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5"
-                    checked={vow.noJudgementZone}
-                    onChange={(e) => toggleSetting("noJudgementZone", e.target.checked)}
-                  />
-                  <span>No judgement zone</span>
-                </label>
-                <label className="flex items-start gap-3 text-sm">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5"
-                    checked={vow.leaderboardEnabled}
-                    onChange={(e) => toggleSetting("leaderboardEnabled", e.target.checked)}
-                  />
-                  <span>Show leaderboard with partners</span>
-                </label>
               </div>
             </div>
 

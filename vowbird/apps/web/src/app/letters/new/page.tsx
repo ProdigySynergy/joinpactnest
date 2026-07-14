@@ -1,14 +1,16 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState, Suspense } from "react";
+import { FormEvent, useEffect, useState, Suspense } from "react";
 import { NavBar } from "@/components/NavBar";
 import { RequireAuth } from "@/components/RequireAuth";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 function WriteLetterForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const { user } = useAuth();
   const [form, setForm] = useState({
     type: params.get("partnerMatchId") ? "PARTNER_LETTER" : "FUTURE_SELF",
     subject: "",
@@ -18,6 +20,13 @@ function WriteLetterForm() {
     partnerMatchId: params.get("partnerMatchId") || "",
   });
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (user && form.recipientId === user.id) {
+      setForm((f) => ({ ...f, recipientId: "" }));
+      setError("You can’t address a letter to yourself.");
+    }
+  }, [user, form.recipientId]);
 
   async function handleSubmit(e: FormEvent, send: boolean) {
     e.preventDefault();

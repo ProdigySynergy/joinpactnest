@@ -77,6 +77,9 @@ export const GENDER_LABELS: Record<(typeof GENDER_OPTIONS)[number], string> = {
 /** Minimum time between mood shares (any context). */
 export const MOOD_UPDATE_COOLDOWN_HOURS = 4;
 
+/** Soft daily cap on mood updates (UTC day). */
+export const MAX_MOOD_UPDATES_PER_DAY = 8;
+
 export const VEILED_ALIASES = [
   "Quiet Falcon",
   "Blue Lantern",

@@ -167,15 +167,15 @@ See [docs/TESTING.md](docs/TESTING.md) for package-level commands and how to add
 - **Pactered** — Network of people from shared pacts + manual pacter requests; mute hides from list only
 - **E2E Messages** — Private DMs encrypted in the browser (ECDH P-256 + AES-GCM); server stores ciphertext only
 - **Vows** — Personal commitments with daily/weekly check-ins
-- **Partner matching** — Goal-based matching (not swiping)
+- **Partner matching** — Auto-queue + discover/direct invites; **one active partner per vow** (free plan also caps 1 match account-wide)
 - **Letters** — Partner letters, future-self, group reflections
 - **Pacts** — Public, invite-only, and private circles
 - **Public pact pages** — Shareable `/p/[slug]` profiles (SEO + social), explore hub at `/explore`
 - **Mood check** — Freeform mood updates (4h cooldown · soft 8/day cap); partners send one-tap cheer chips
-- **No judgement zone** — Creator toggle: soft misses vs system call-outs
-- **Leaderboards** — On by default for vows/pacts; creator can hide
-- **Streaks & progress** — Streak counters and pact leaderboards
-- **Safety** — Report, block, content filtering in Veiled Mode
+- **No judgement zone** — Soft misses vs system call-outs (partner match page for vows; pact settings for groups)
+- **Leaderboards** — Partner streak board on match page; pact boards on pact pages (on by default)
+- **Streaks & progress** — Streak counters and leaderboards
+- **Safety** — Report, block, content filtering in Veiled Mode; self-actions (pacter, message, report, block, partner invite, join-to-connect) are blocked in UI and API
 - **Admin dashboard** — User moderation, reports, stats
 
 ## API overview
@@ -192,7 +192,8 @@ See the product spec for the full endpoint list. Key routes:
 - `PUT /e2e/keys`, `GET /e2e/keys/:userId`, `GET /messages/conversations`, `GET /messages/with/:userId`, `POST /messages`
 - `GET/POST /vows`, `POST /check-ins`
 - `POST /moods`, `GET /moods?vowId|pactId|partnerMatchId=`, `POST /encouragements`
-- `POST /partner-requests`, `GET /matches/me`
+- `POST /partner-requests` (optional `targetUserId` for directed invite), `GET /partner-requests/incoming`, `POST /partner-requests/:id/accept|decline|cancel`
+- `GET /partners/discover?vowId=`, `GET /matches/me`, `GET /matches/:id`
 - `POST/GET /letters`, `POST/GET /pacts`
 - `GET /public/pacts`, `GET /public/pacts/:slug` (no auth — indexed share pages)
 - `POST /reports`, `GET /reports/open?reportedUserId=`, `POST /reports/:id/comments` (max 2 follow-ups while OPEN)
@@ -211,7 +212,8 @@ See the product spec for the full endpoint list. Key routes:
 - Mood updates are freeform (any time), capped at **8 per user per UTC day**.
 - Encouragement prefers one-tap stickers (`Keep going`, etc.); optional short note (≤140). Longer encouragement still uses Letters.
 - `noJudgementZone=true` → gentle miss messages (no harsh call-outs). `false` → call-out notifications to partners/pact members on `MISSED` check-ins.
-- `leaderboardEnabled` defaults `true`; owners can turn off. Public pact pages hide the leaders list when off (aggregate stats still computed).
+- `leaderboardEnabled` defaults `true`. For vows, the vow owner toggles judgement/leaderboard on the **partner match** page (not the vow page). For pacts, owners toggle on the pact page; public pages hide leaders when off.
+- Each vow may have at most **one active partner match**. Directed invites use `PartnerRequest.status=PENDING` + `targetUserId`; auto-queue uses `WAITING` with no target.
 - Vow create accepts labeled **start date** + optional **end date**.
 
 ### Public pacts (assumptions)

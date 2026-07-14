@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
@@ -9,14 +10,34 @@ import { api } from "@/lib/api";
 type Props = {
   pactId: string;
   slug: string;
+  ownerId?: string;
 };
 
-export function PublicPactJoin({ pactId, slug }: Props) {
+export function PublicPactJoin({ pactId, slug, ownerId }: Props) {
   const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const next = `/p/${slug}`;
+  const isOwner = Boolean(user && ownerId && user.id === ownerId);
+
+  const { data: membership } = useQuery({
+    queryKey: ["pact-membership", pactId],
+    queryFn: () =>
+      api<{
+        pact: {
+          owner: { id: string };
+          members: Array<{ user: { id: string } }>;
+        };
+      }>(`/pacts/${pactId}`),
+    enabled: Boolean(user) && !isOwner,
+    retry: false,
+  });
+
+  const isMember =
+    isOwner ||
+    membership?.pact.owner.id === user?.id ||
+    membership?.pact.members?.some((m) => m.user.id === user?.id);
 
   async function join() {
     if (!user) {
@@ -33,6 +54,16 @@ export function PublicPactJoin({ pactId, slug }: Props) {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (user && isMember) {
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <Link href={`/pacts/${pactId}`} className="btn-primary">
+          {isOwner ? "Manage your pact" : "Open your pact"}
+        </Link>
+      </div>
+    );
   }
 
   return (

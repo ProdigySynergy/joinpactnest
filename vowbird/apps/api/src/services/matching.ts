@@ -2,9 +2,10 @@ import { FREE_PLAN_LIMITS } from "@vowbird/shared";
 import { prisma } from "../lib/prisma";
 import { areUsersBlocked } from "./safety";
 
+/** Only auto-queue requests (no directed target) enter the matcher. */
 export async function runMatching(): Promise<{ matched: number }> {
   const waiting = await prisma.partnerRequest.findMany({
-    where: { status: "WAITING" },
+    where: { status: "WAITING", targetUserId: null },
     include: { user: true, vow: true },
     orderBy: { createdAt: "asc" },
   });
@@ -16,10 +17,14 @@ export async function runMatching(): Promise<{ matched: number }> {
     const reqA = waiting[i]!;
     if (used.has(reqA.id) || reqA.user.isSuspended) continue;
 
+    // Skip vows that already have an active partner
+    if (await vowHasActivePartner(reqA.vowId)) continue;
+
     for (let j = i + 1; j < waiting.length; j++) {
       const reqB = waiting[j]!;
       if (used.has(reqB.id) || reqB.user.isSuspended) continue;
       if (reqA.userId === reqB.userId) continue;
+      if (await vowHasActivePartner(reqB.vowId)) continue;
 
       const blocked = await areUsersBlocked(reqA.userId, reqB.userId);
       if (blocked) continue;
@@ -31,9 +36,11 @@ export async function runMatching(): Promise<{ matched: number }> {
         reqA.profileModePreference === "EITHER" ||
         reqB.profileModePreference === "EITHER" ||
         reqA.profileModePreference === reqB.profileModePreference ||
-        (reqA.user.profileMode === reqB.user.profileMode);
+        reqA.user.profileMode === reqB.user.profileMode;
 
       if (!modeCompatible) continue;
+
+      if (!(await canCreateMatch(reqA.userId)) || !(await canCreateMatch(reqB.userId))) continue;
 
       const matchMode =
         reqA.user.profileMode === "VEILED" || reqB.user.profileMode === "VEILED"
@@ -67,6 +74,13 @@ export async function runMatching(): Promise<{ matched: number }> {
   }
 
   return { matched };
+}
+
+export async function vowHasActivePartner(vowId: string): Promise<boolean> {
+  const count = await prisma.partnerMatch.count({
+    where: { vowId, status: "ACTIVE" },
+  });
+  return count > 0;
 }
 
 export async function canCreateMatch(userId: string): Promise<boolean> {

@@ -35,9 +35,11 @@ export default function MessageThreadPage() {
         peer: { id: string; username: string; displayName: string };
         messages: WireMessage[];
       }>(`/messages/with/${peerId}`),
-    enabled: !!peerId,
+    enabled: !!peerId && peerId !== user?.id,
     refetchInterval: 8000,
   });
+
+  const messagingSelf = Boolean(user && peerId === user.id);
 
   useEffect(() => {
     if (!user || !data?.messages?.length) return;
@@ -88,6 +90,16 @@ export default function MessageThreadPage() {
     <RequireAuth>
       <NavBar />
       <main className="mx-auto flex max-w-2xl flex-col px-4 py-8" style={{ minHeight: "70vh" }}>
+        {messagingSelf ? (
+          <div className="card space-y-3">
+            <h1 className="text-xl font-bold">That’s you</h1>
+            <p className="text-sm text-navy/70">You can’t message yourself.</p>
+            <Link href="/messages" className="btn-secondary inline-block text-center">
+              Back to messages
+            </Link>
+          </div>
+        ) : (
+          <>
         <div className="mb-4">
           <Link href="/messages" className="text-sm text-gold hover:underline">
             ← All messages
@@ -140,6 +152,8 @@ export default function MessageThreadPage() {
             {sending ? "…" : "Send"}
           </button>
         </form>
+          </>
+        )}
       </main>
     </RequireAuth>
   );

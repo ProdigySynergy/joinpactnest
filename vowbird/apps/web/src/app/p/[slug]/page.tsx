@@ -78,7 +78,7 @@ export default async function PublicPactPage({ params }: Props) {
             {pact.description || `${rhythm}. Accountability that sticks.`}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <PublicPactJoin pactId={pact.id} slug={pact.slug} />
+            <PublicPactJoin pactId={pact.id} slug={pact.slug} ownerId={owner.id} />
             <SharePactButton url={shareUrl} title={pact.title} />
           </div>
         </div>
@@ -157,7 +157,7 @@ export default async function PublicPactPage({ params }: Props) {
               Join the circle, check in with the room, and share the link with someone who needs this too.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <PublicPactJoin pactId={pact.id} slug={pact.slug} />
+              <PublicPactJoin pactId={pact.id} slug={pact.slug} ownerId={owner.id} />
               <Link href="/explore" className="btn-secondary border-cream/30 bg-transparent text-cream hover:border-gold">
                 Browse more pacts
               </Link>
