@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicNav } from "@/components/NavBar";
-import { fetchPublicPactList, formatCategory } from "@/lib/public-pacts";
+import { exploreFeedUrl, fetchPublicPactList, formatCategory, siteFeedUrl } from "@/lib/public-pacts";
 
 export const metadata: Metadata = {
   title: "Explore public pacts · Vowbird",
   description:
     "Browse open accountability circles on Vowbird. See who’s winning, how long they’ve been going, and join with an account.",
   robots: { index: true, follow: true },
+  alternates: {
+    types: {
+      "application/rss+xml": [
+        { url: exploreFeedUrl(), title: "Vowbird · Explore public pacts" },
+        { url: siteFeedUrl(), title: "Vowbird · Public pacts" },
+      ],
+    },
+  },
 };
 
 export default async function ExplorePage() {
@@ -21,6 +29,15 @@ export default async function ExplorePage() {
         <h1 className="text-3xl font-bold md:text-4xl">Public pacts you can join</h1>
         <p className="mt-3 max-w-2xl text-navy/65">
           Open circles with live momentum. Create an account to join — share any pact page anywhere.
+        </p>
+        <p className="mt-2 text-sm">
+          <a href={exploreFeedUrl()} className="text-gold hover:underline">
+            RSS feed
+          </a>
+          <span className="text-navy/40"> · </span>
+          <a href={siteFeedUrl()} className="text-gold hover:underline">
+            All public pacts
+          </a>
         </p>
 
         <div className="mt-10 space-y-4">

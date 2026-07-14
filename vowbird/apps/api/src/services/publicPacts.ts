@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma";
-import { sanitizePublicProfile } from "../lib/auth";
+import { sanitizePublicProfile, sanitizeUserForOthers } from "../lib/auth";
 import { getPactLeaderboard } from "./progress";
 
 function daysBetween(from: Date, to = new Date()): number {
@@ -138,5 +138,56 @@ export async function getPublicPactBySlug(slug: string) {
         }))
       : [],
     leaderboardEnabled: pact.leaderboardEnabled,
+  };
+}
+
+export type PublicPactPost = {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: { displayName: string };
+};
+
+/** Room posts for a public ACTIVE pact — no auth. Authors respect in-pact display mode. */
+export async function listPublicPactPosts(slug: string, limit = 50): Promise<{
+  pact: { id: string; title: string; slug: string };
+  posts: PublicPactPost[];
+} | null> {
+  const pact = await prisma.pact.findFirst({
+    where: { slug, privacy: "PUBLIC", status: "ACTIVE" },
+    select: { id: true, title: true, slug: true },
+  });
+  if (!pact) return null;
+
+  const posts = await prisma.roomPost.findMany({
+    where: { pactId: pact.id, hiddenAt: null },
+    include: {
+      user: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+
+  const members = await prisma.pactMember.findMany({
+    where: {
+      pactId: pact.id,
+      userId: { in: posts.map((p) => p.userId) },
+      leftAt: null,
+    },
+  });
+  const modeByUser = new Map(members.map((m) => [m.userId, m.displayModeInPact]));
+
+  return {
+    pact,
+    posts: posts.map((p) => {
+      const mode = modeByUser.get(p.userId) || p.user.profileMode;
+      const author = sanitizeUserForOthers({ ...p.user, profileMode: mode });
+      return {
+        id: p.id,
+        body: p.body,
+        createdAt: p.createdAt.toISOString(),
+        author: { displayName: author.displayName },
+      };
+    }),
   };
 }

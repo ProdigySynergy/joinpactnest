@@ -122,6 +122,15 @@ export default function LandingPage() {
 
       <footer className="border-t border-navy/10 px-4 py-8 text-center text-sm text-navy/50">
         <p>{BRAND.secondaryTagline}</p>
+        <p className="mt-2">
+          <Link href="/explore" className="text-gold hover:underline">
+            Explore pacts
+          </Link>
+          {" · "}
+          <a href="/feed.xml" className="text-gold hover:underline">
+            RSS
+          </a>
+        </p>
         <p className="mt-2">&copy; {new Date().getFullYear()} Vowbird</p>
       </footer>
     </div>

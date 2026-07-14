@@ -54,9 +54,33 @@ export type PublicPactListItem = {
   successRate: number;
   avgCompletionPercentage: number;
   noJudgementZone: boolean;
+  createdAt: string;
+};
+
+export type PublicPactPostItem = {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: { displayName: string };
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+export function siteUrl(): string {
+  return (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+}
+
+export function siteFeedUrl(): string {
+  return `${siteUrl()}/feed.xml`;
+}
+
+export function exploreFeedUrl(): string {
+  return `${siteUrl()}/explore/feed.xml`;
+}
+
+export function pactFeedUrl(slug: string): string {
+  return `${siteUrl()}/p/${encodeURIComponent(slug)}/feed.xml`;
+}
 
 export async function fetchPublicPact(slug: string): Promise<PublicPactProfile | null> {
   const res = await fetch(`${API_URL}/public/pacts/${encodeURIComponent(slug)}`, {
@@ -77,6 +101,17 @@ export async function fetchPublicPactList(): Promise<PublicPactListItem[]> {
   if (!res.ok) throw new Error("Failed to load public pacts");
   const data = (await res.json()) as { pacts: PublicPactListItem[] };
   return data.pacts;
+}
+
+export async function fetchPublicPactPosts(
+  slug: string
+): Promise<{ pact: { id: string; title: string; slug: string }; posts: PublicPactPostItem[] } | null> {
+  const res = await fetch(`${API_URL}/public/pacts/${encodeURIComponent(slug)}/posts`, {
+    next: { revalidate: 60 },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Failed to load public pact posts");
+  return res.json();
 }
 
 export function publicPactShareUrl(slug: string): string {

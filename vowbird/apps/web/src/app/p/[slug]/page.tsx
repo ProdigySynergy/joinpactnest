@@ -6,8 +6,10 @@ import { PersonCard } from "@/components/PersonCard";
 import {
   fetchPublicPact,
   formatCategory,
+  pactFeedUrl,
   publicPactOgImageUrl,
   publicPactShareUrl,
+  siteFeedUrl,
 } from "@/lib/public-pacts";
 import { PublicPactJoin } from "./PublicPactJoin";
 import { SharePactButton } from "./SharePactButton";
@@ -26,11 +28,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     `${stats.memberCount} people · ${stats.successRate}% on track · live ${stats.daysLive} days on Vowbird`;
   const url = publicPactShareUrl(pact.slug);
   const ogImage = publicPactOgImageUrl(pact.slug);
+  const feed = pactFeedUrl(pact.slug);
 
   return {
     title: `${pact.title} · Vowbird Pact`,
     description,
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      types: {
+        "application/rss+xml": feed,
+      },
+    },
     openGraph: {
       title: pact.title,
       description,
@@ -189,6 +197,12 @@ export default async function PublicPactPage({ params }: Props) {
               <Link href="/explore" className="btn-secondary border-cream/30 bg-transparent text-cream hover:border-gold">
                 Browse more pacts
               </Link>
+              <a
+                href={pactFeedUrl(pact.slug)}
+                className="btn-secondary border-cream/30 bg-transparent text-cream hover:border-gold"
+              >
+                RSS feed
+              </a>
             </div>
           </div>
         </div>

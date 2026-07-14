@@ -196,7 +196,7 @@ See the product spec for the full endpoint list. Key routes:
 - `POST /partner-requests` (optional `targetUserId` for directed invite), `GET /partner-requests/incoming`, `POST /partner-requests/:id/accept|decline|cancel`
 - `GET /partners/discover?vowId=`, `GET /matches/me`, `GET /matches/:id`
 - `POST/GET /letters`, `POST/GET /pacts`
-- `GET /public/pacts`, `GET /public/pacts/:slug` (no auth — indexed share pages)
+- `GET /public/pacts`, `GET /public/pacts/:slug`, `GET /public/pacts/:slug/posts` (no auth — indexed share pages)
 - `POST /reports`, `GET /reports/open?reportedUserId=`, `POST /reports/:id/comments` (max 2 follow-ups while OPEN)
 - `POST /blocks`, `GET /blocks/me`
 - `GET /admin/stats` (admin only)
@@ -228,6 +228,7 @@ See the product spec for the full endpoint list. Key routes:
 - Public pact **Share** opens a screenshottable card (brand, member count, leaders, full pact URL + QR). Download PNG or copy link.
 - **OG images** for crawlers: run `pnpm og:pacts` to write `uploads/og/pacts/{slug}.png` (served at `{API_PUBLIC_URL}/uploads/og/pacts/{slug}.png`). Linked as `og:image` / Twitter large image on `/p/[slug]`.
 - **Daily cron example:** `0 3 * * * cd /path/to/vowbird && pnpm og:pacts >> /var/log/vowbird-og.log 2>&1`
+- **RSS:** `/feed.xml` (all public pacts), `/explore/feed.xml` (same list), `/p/[slug]/feed.xml` (pact + public room posts). Linked via `<link rel="alternate" type="application/rss+xml">` on public pages. Public posts API: `GET /public/pacts/:slug/posts`.
 
 ### Safety notes
 
