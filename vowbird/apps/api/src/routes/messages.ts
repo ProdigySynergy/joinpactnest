@@ -9,6 +9,36 @@ import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
 import { areUsersBlocked, assertNotSuspended } from "../services/safety";
 
+type WireMessage = {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  ciphertext: string;
+  iv: string;
+  encrypted: boolean;
+  createdAt: Date;
+};
+
+function toWire(m: {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  ciphertext: string;
+  iv: string;
+  encrypted: boolean;
+  createdAt: Date;
+}): WireMessage {
+  return {
+    id: m.id,
+    senderId: m.senderId,
+    recipientId: m.recipientId,
+    ciphertext: m.ciphertext,
+    iv: m.iv,
+    encrypted: m.encrypted,
+    createdAt: m.createdAt,
+  };
+}
+
 export async function messageRoutes(app: FastifyInstance) {
   app.put("/e2e/keys", { preHandler: authenticate }, async (request, reply) => {
     const parsed = upsertE2eKeySchema.safeParse(request.body);
@@ -49,7 +79,7 @@ export async function messageRoutes(app: FastifyInstance) {
     const seen = new Set<string>();
     const conversations: Array<{
       peer: ReturnType<typeof sanitizeUserForOthers>;
-      lastMessage: { id: string; senderId: string; ciphertext: string; iv: string; createdAt: Date };
+      lastMessage: WireMessage;
     }> = [];
 
     for (const msg of recent) {
@@ -59,13 +89,7 @@ export async function messageRoutes(app: FastifyInstance) {
       const peerUser = msg.senderId === me ? msg.recipient : msg.sender;
       conversations.push({
         peer: sanitizeUserForOthers(peerUser),
-        lastMessage: {
-          id: msg.id,
-          senderId: msg.senderId,
-          ciphertext: msg.ciphertext,
-          iv: msg.iv,
-          createdAt: msg.createdAt,
-        },
+        lastMessage: toWire(msg),
       });
     }
 
@@ -83,27 +107,24 @@ export async function messageRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: "Messaging unavailable with this user" });
     }
 
-    const messages = await prisma.directMessage.findMany({
-      where: {
-        OR: [
-          { senderId: me, recipientId: userId },
-          { senderId: userId, recipientId: me },
-        ],
-      },
-      orderBy: { createdAt: "asc" },
-      take: 200,
-    });
+    const [messages, peerKey] = await Promise.all([
+      prisma.directMessage.findMany({
+        where: {
+          OR: [
+            { senderId: me, recipientId: userId },
+            { senderId: userId, recipientId: me },
+          ],
+        },
+        orderBy: { createdAt: "asc" },
+        take: 200,
+      }),
+      prisma.e2eKey.findUnique({ where: { userId } }),
+    ]);
 
     return {
       peer: sanitizeUserForOthers(peer),
-      messages: messages.map((m) => ({
-        id: m.id,
-        senderId: m.senderId,
-        recipientId: m.recipientId,
-        ciphertext: m.ciphertext,
-        iv: m.iv,
-        createdAt: m.createdAt,
-      })),
+      peerHasE2eKey: Boolean(peerKey),
+      messages: messages.map(toWire),
     };
   });
 
@@ -114,7 +135,7 @@ export async function messageRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: zodErrorToMessage(parsed.error) });
     }
 
-    const { recipientId, ciphertext, iv } = parsed.data;
+    const { recipientId, ciphertext, iv, body } = parsed.data;
     if (recipientId === request.userId) {
       return reply.status(400).send({ error: "Cannot message yourself" });
     }
@@ -128,33 +149,51 @@ export async function messageRoutes(app: FastifyInstance) {
     }
 
     const recipientKey = await prisma.e2eKey.findUnique({ where: { userId: recipientId } });
-    if (!recipientKey) {
-      return reply.status(400).send({ error: "Recipient has not enabled E2E messaging yet" });
+
+    if (ciphertext && iv) {
+      if (!recipientKey) {
+        return reply.status(400).send({
+          error: "Recipient has no E2E key — send a plaintext body instead",
+        });
+      }
+      const senderKey = await prisma.e2eKey.findUnique({ where: { userId: request.userId! } });
+      if (!senderKey) {
+        return reply.status(400).send({ error: "Set up your E2E key before sending encrypted messages" });
+      }
+
+      const message = await prisma.directMessage.create({
+        data: {
+          senderId: request.userId!,
+          recipientId,
+          ciphertext,
+          iv,
+          encrypted: true,
+        },
+      });
+
+      return reply.status(201).send({ message: toWire(message) });
     }
 
-    const senderKey = await prisma.e2eKey.findUnique({ where: { userId: request.userId! } });
-    if (!senderKey) {
-      return reply.status(400).send({ error: "Set up your E2E key before sending messages" });
+    // Plaintext fallback
+    if (!body) {
+      return reply.status(400).send({ error: "Message body required" });
+    }
+    if (recipientKey) {
+      return reply.status(400).send({
+        error: "Recipient supports E2E — send ciphertext+iv instead of plaintext",
+      });
     }
 
     const message = await prisma.directMessage.create({
       data: {
         senderId: request.userId!,
         recipientId,
-        ciphertext,
-        iv,
+        ciphertext: body,
+        iv: "plaintext",
+        encrypted: false,
       },
     });
 
-    return reply.status(201).send({
-      message: {
-        id: message.id,
-        senderId: message.senderId,
-        recipientId: message.recipientId,
-        ciphertext: message.ciphertext,
-        iv: message.iv,
-        createdAt: message.createdAt,
-      },
-    });
+    return reply.status(201).send({ message: toWire(message) });
   });
 }

@@ -582,13 +582,15 @@ model E2eKey {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-/// Ciphertext-only direct messages. Server cannot decrypt bodies.
+/// Direct messages — E2E ciphertext when both parties have keys; plaintext fallback otherwise.
 model DirectMessage {
   id          String   @id @default(cuid())
   senderId    String
   recipientId String
   ciphertext  String   @db.Text
   iv          String
+  /// false = body stored as plaintext in ciphertext (server-readable fallback)
+  encrypted   Boolean  @default(true)
   createdAt   DateTime @default(now())
 
   sender      User     @relation("DmSender", fields: [senderId], references: [id], onDelete: Cascade)

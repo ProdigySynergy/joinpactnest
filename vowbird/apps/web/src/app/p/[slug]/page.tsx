@@ -89,7 +89,14 @@ export default async function PublicPactPage({ params }: Props) {
           )}
           <div className="mt-8 flex flex-wrap gap-3">
             <PublicPactJoin pactId={pact.id} slug={pact.slug} ownerId={owner.id} />
-            <SharePactButton url={shareUrl} title={pact.title} />
+            <SharePactButton
+              url={shareUrl}
+              title={pact.title}
+              category={formatCategory(pact.category)}
+              memberCount={stats.memberCount}
+              leaders={leaders}
+              noJudgementZone={pact.noJudgementZone}
+            />
           </div>
         </div>
       </section>

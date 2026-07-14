@@ -177,11 +177,37 @@ export const upsertE2eKeySchema = z.object({
   publicKey: z.string().min(32).max(4000),
 });
 
-export const sendDirectMessageSchema = z.object({
-  recipientId: z.string().min(1),
-  ciphertext: z.string().min(1).max(20000),
-  iv: z.string().min(8).max(128),
-});
+export const sendDirectMessageSchema = z
+  .object({
+    recipientId: z.string().min(1),
+    /** E2E ciphertext (preferred when peer has a key). */
+    ciphertext: z.string().min(1).max(20000).optional(),
+    iv: z.string().min(8).max(128).optional(),
+    /** Plaintext fallback when recipient has not registered an E2E key yet. */
+    body: z.string().min(1).max(4000).optional(),
+  })
+  .superRefine((d, ctx) => {
+    const e2e = Boolean(d.ciphertext && d.iv);
+    const plain = Boolean(d.body);
+    if (!e2e && !plain) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Provide ciphertext+iv or plaintext body",
+      });
+    }
+    if (e2e && plain) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Send either encrypted or plaintext, not both",
+      });
+    }
+    if ((d.ciphertext && !d.iv) || (!d.ciphertext && d.iv)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "ciphertext and iv are both required for E2E messages",
+      });
+    }
+  });
 
 export const pushTokenSchema = z.object({
   token: z.string().min(10),

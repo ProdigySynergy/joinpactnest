@@ -16,6 +16,7 @@ type WireMessage = {
   recipientId: string;
   ciphertext: string;
   iv: string;
+  encrypted: boolean;
   createdAt: string;
 };
 
@@ -33,6 +34,7 @@ export default function MessageThreadPage() {
     queryFn: () =>
       api<{
         peer: { id: string; username: string; displayName: string };
+        peerHasE2eKey: boolean;
         messages: WireMessage[];
       }>(`/messages/with/${peerId}`),
     enabled: !!peerId && peerId !== user?.id,
@@ -40,6 +42,7 @@ export default function MessageThreadPage() {
   });
 
   const messagingSelf = Boolean(user && peerId === user.id);
+  const usePlaintext = data ? !data.peerHasE2eKey : false;
 
   useEffect(() => {
     if (!user || !data?.messages?.length) return;
@@ -48,6 +51,10 @@ export default function MessageThreadPage() {
       const next: Record<string, string> = { ...decrypted };
       for (const m of data.messages) {
         if (next[m.id]) continue;
+        if (!m.encrypted) {
+          next[m.id] = m.ciphertext;
+          continue;
+        }
         try {
           const otherId = m.senderId === user.id ? peerId : m.senderId;
           const keyRes = await api<{ key: { publicKey: string } }>(`/e2e/keys/${otherId}`);
@@ -70,12 +77,19 @@ export default function MessageThreadPage() {
     setSending(true);
     setError("");
     try {
-      const keyRes = await api<{ key: { publicKey: string } }>(`/e2e/keys/${peerId}`);
-      const { ciphertext, iv } = await encryptForRecipient(user.id, keyRes.key.publicKey, text.trim());
-      await api("/messages", {
-        method: "POST",
-        body: JSON.stringify({ recipientId: peerId, ciphertext, iv }),
-      });
+      if (usePlaintext) {
+        await api("/messages", {
+          method: "POST",
+          body: JSON.stringify({ recipientId: peerId, body: text.trim() }),
+        });
+      } else {
+        const keyRes = await api<{ key: { publicKey: string } }>(`/e2e/keys/${peerId}`);
+        const { ciphertext, iv } = await encryptForRecipient(user.id, keyRes.key.publicKey, text.trim());
+        await api("/messages", {
+          method: "POST",
+          body: JSON.stringify({ recipientId: peerId, ciphertext, iv }),
+        });
+      }
       setText("");
       await qc.invalidateQueries({ queryKey: ["dm-thread", peerId] });
       await qc.invalidateQueries({ queryKey: ["dm-conversations"] });
@@ -100,58 +114,75 @@ export default function MessageThreadPage() {
           </div>
         ) : (
           <>
-        <div className="mb-4">
-          <Link href="/messages" className="text-sm text-gold hover:underline">
-            ← All messages
-          </Link>
-          {data?.peer && (
-            <h1 className="mt-2 text-2xl font-bold">
-              <Link href={`/u/${data.peer.username}`} className="hover:text-gold">
-                {data.peer.displayName}
+            <div className="mb-4">
+              <Link href="/messages" className="text-sm text-gold hover:underline">
+                ← All messages
               </Link>
-            </h1>
-          )}
-          <p className="text-xs text-navy/50">End-to-end encrypted · server cannot read content</p>
-        </div>
-
-        {isLoading && <p className="text-navy/60">Loading…</p>}
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-
-        <div className="flex-1 space-y-3 overflow-y-auto rounded-2xl border border-navy/10 bg-white/50 p-4">
-          {(data?.messages || []).map((m) => {
-            const mine = m.senderId === user?.id;
-            return (
-              <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
-                    mine ? "bg-gold/25 text-navy" : "bg-navy/5 text-navy"
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{decrypted[m.id] || "Decrypting…"}</p>
-                  <p className="mt-1 text-[10px] text-navy/40">
-                    {new Date(m.createdAt).toLocaleString()}
+              {data?.peer && (
+                <h1 className="mt-2 text-2xl font-bold">
+                  <Link href={`/u/${data.peer.username}`} className="hover:text-gold">
+                    {data.peer.displayName}
+                  </Link>
+                </h1>
+              )}
+              {usePlaintext ? (
+                <div className="mt-3 rounded-xl border border-amber-300/80 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                  <p className="font-medium">Chats with this person are not end-to-end encrypted yet</p>
+                  <p className="mt-1 text-amber-900/80">
+                    They haven’t opened Vowbird long enough to set up secure messaging. Messages are
+                    readable by the server until they do — then new messages will encrypt automatically.
                   </p>
                 </div>
-              </div>
-            );
-          })}
-          {(data?.messages || []).length === 0 && !isLoading && (
-            <p className="text-center text-sm text-navy/50">Say hello — privately.</p>
-          )}
-        </div>
+              ) : (
+                <p className="text-xs text-navy/50">End-to-end encrypted · server cannot read content</p>
+              )}
+            </div>
 
-        <form onSubmit={send} className="mt-4 flex gap-2">
-          <input
-            className="input flex-1"
-            placeholder="Write an encrypted message…"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            maxLength={4000}
-          />
-          <button type="submit" className="btn-primary" disabled={sending || !text.trim()}>
-            {sending ? "…" : "Send"}
-          </button>
-        </form>
+            {isLoading && <p className="text-navy/60">Loading…</p>}
+            {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+
+            <div className="flex-1 space-y-3 overflow-y-auto rounded-2xl border border-navy/10 bg-white/50 p-4">
+              {(data?.messages || []).map((m) => {
+                const mine = m.senderId === user?.id;
+                return (
+                  <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
+                        mine ? "bg-gold/25 text-navy" : "bg-navy/5 text-navy"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap">
+                        {decrypted[m.id] || (m.encrypted ? "Decrypting…" : m.ciphertext)}
+                      </p>
+                      {!m.encrypted && (
+                        <p className="mt-1 text-[10px] uppercase tracking-wide text-amber-700/80">
+                          Unencrypted
+                        </p>
+                      )}
+                      <p className="mt-1 text-[10px] text-navy/40">
+                        {new Date(m.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+              {(data?.messages || []).length === 0 && !isLoading && (
+                <p className="text-center text-sm text-navy/50">Say hello — privately.</p>
+              )}
+            </div>
+
+            <form onSubmit={send} className="mt-4 flex gap-2">
+              <input
+                className="input flex-1"
+                placeholder={usePlaintext ? "Write a message…" : "Write an encrypted message…"}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                maxLength={4000}
+              />
+              <button type="submit" className="btn-primary" disabled={sending || !text.trim()}>
+                {sending ? "…" : "Send"}
+              </button>
+            </form>
           </>
         )}
       </main>

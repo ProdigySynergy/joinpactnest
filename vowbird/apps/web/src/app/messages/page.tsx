@@ -15,7 +15,14 @@ import {
 
 type Conversation = {
   peer: { id: string; username: string; displayName: string };
-  lastMessage: { id: string; senderId: string; ciphertext: string; iv: string; createdAt: string };
+  lastMessage: {
+    id: string;
+    senderId: string;
+    ciphertext: string;
+    iv: string;
+    encrypted: boolean;
+    createdAt: string;
+  };
 };
 
 export default function MessagesPage() {
@@ -41,6 +48,10 @@ export default function MessagesPage() {
       const next: Record<string, string> = {};
       for (const c of data.conversations) {
         try {
+          if (!c.lastMessage.encrypted) {
+            next[c.peer.id] = c.lastMessage.ciphertext;
+            continue;
+          }
           const otherId = c.lastMessage.senderId === user.id ? c.peer.id : c.lastMessage.senderId;
           const keyRes = await api<{ key: { publicKey: string } }>(`/e2e/keys/${otherId}`);
           const text = await decryptFromSender(
@@ -96,8 +107,9 @@ export default function MessagesPage() {
         <div>
           <h1 className="text-2xl font-bold">Messages</h1>
           <p className="mt-2 text-sm text-navy/65">
-            End-to-end encrypted. Vowbird stores ciphertext only — your private key stays in this
-            browser.
+            Messages are end-to-end encrypted when both of you have keys set up. If someone hasn’t
+            opened Vowbird yet, you can still chat — you’ll see a clear notice that those messages
+            aren’t encrypted.
           </p>
         </div>
 

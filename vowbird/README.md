@@ -203,9 +203,10 @@ See the product spec for the full endpoint list. Key routes:
 ### E2E messages (assumptions)
 
 - Identity keys: ECDH **P-256**. Private key lives in the browser (`localStorage`); public key is registered via `PUT /e2e/keys`.
-- Message content is encrypted client-side with **AES-GCM** derived per peer. API accepts only `ciphertext` + `iv`.
-- Clearing site data without a key backup means prior messages cannot be decrypted on that device. Use **Download key backup** on `/messages`.
-- Blocked users cannot exchange DMs. Recipient must have an E2E key registered before the first send.
+- When **both** users have keys: content is encrypted client-side with **AES-GCM**. API stores `ciphertext` + `iv` (`encrypted=true`).
+- When the recipient has **no** E2E key yet: plaintext `body` is accepted (`encrypted=false`). The thread shows a clear banner that chats are not end-to-end encrypted until they open Vowbird and register a key; new sends then switch to E2E automatically.
+- Clearing site data without a key backup means prior **encrypted** messages cannot be decrypted on that device. Use **Download key backup** on `/messages`.
+- Blocked users cannot exchange DMs.
 
 ### Mood & accountability (assumptions)
 
@@ -223,6 +224,7 @@ See the product spec for the full endpoint list. Key routes:
 - **On track** = share of members with ≥70% weekly completion.
 - Join still requires an account (`POST /pacts/:id/join`).
 - Set `NEXT_PUBLIC_SITE_URL` for correct Open Graph / share URLs.
+- Public pact **Share** opens a screenshottable card (brand, member count, leaders, full pact URL + QR). Download PNG or copy link. (Cron OG image files for `og:image` are a planned follow-up.)
 
 ### Safety notes
 
