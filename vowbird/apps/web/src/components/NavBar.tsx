@@ -59,7 +59,7 @@ export function PublicNav() {
         <Link href="/" className="text-xl font-bold text-gold">
           Vowbird
         </Link>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
           <Link href="/login" className="text-sm text-cream/80 hover:text-gold">
             Log in
           </Link>

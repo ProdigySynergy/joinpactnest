@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm run --parallel dev:api dev:web",
+    "dev": "pnpm --parallel --filter @vowbird/api --filter @vowbird/web dev",
     "dev:web": "pnpm --filter @vowbird/web dev",
     "dev:api": "pnpm --filter @vowbird/api dev",
     "dev:mobile": "pnpm --filter @vowbird/mobile dev",

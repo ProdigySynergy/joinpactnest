@@ -80,6 +80,16 @@ npx pnpm@9.12.0 db:seed
 npx pnpm@9.12.0 dev
 ```
 
+```
+> vowbird@0.1.0 db:seed C:\Users\sageads\Documents\Dev\Repos\ambitious\joinpactnest\vowbird
+> tsx prisma/seed.ts
+
+Seeding Vowbird database...
+Seed complete!
+Admin: admin@vowbird.app / Admin123!@
+Test users: alex@example.com / Password123!
+```
+
 #### Docker error: `docker_engine ... cannot find the file specified`
 
 Docker Desktop is not running. Either:
