@@ -69,7 +69,7 @@ export default async function PublicPactPage({ params }: Props) {
         />
         <div className="relative mx-auto max-w-3xl">
           <p className="mb-3 text-sm font-semibold tracking-wide text-gold">Vowbird · Public pact</p>
-          <span className="badge border border-cream/20 bg-cream/10 text-cream/80">
+          <span className="inline-flex rounded-full border border-cream/35 bg-cream/15 px-3 py-1 text-xs font-medium uppercase tracking-wide text-cream">
             {formatCategory(pact.category)}
           </span>
           <h1 className="mt-4 text-4xl font-bold leading-tight md:text-5xl">{pact.title}</h1>
