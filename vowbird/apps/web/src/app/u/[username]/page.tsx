@@ -170,6 +170,9 @@ export default function UserProfilePage() {
                             You&apos;re pactered
                           </span>
                         )}
+                        <Link href={`/messages/${data.profile.id}`} className="btn-primary py-2 text-sm">
+                          Message
+                        </Link>
                         {relation.muted ? (
                           <button type="button" className="btn-secondary py-2 text-sm" onClick={unmute}>
                             Unmute

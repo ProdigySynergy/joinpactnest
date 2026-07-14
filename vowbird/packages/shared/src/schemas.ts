@@ -171,6 +171,16 @@ export const mutePacterSchema = z.object({
   mutedUserId: z.string().min(1),
 });
 
+export const upsertE2eKeySchema = z.object({
+  publicKey: z.string().min(32).max(4000),
+});
+
+export const sendDirectMessageSchema = z.object({
+  recipientId: z.string().min(1),
+  ciphertext: z.string().min(1).max(20000),
+  iv: z.string().min(8).max(128),
+});
+
 export const pushTokenSchema = z.object({
   token: z.string().min(10),
   platform: z.enum(["IOS", "ANDROID", "WEB"]),

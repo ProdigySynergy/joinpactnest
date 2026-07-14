@@ -9,6 +9,7 @@ const navLinks = [
   { href: "/vows", label: "Vows" },
   { href: "/matches", label: "Partners" },
   { href: "/pacters", label: "Pactered" },
+  { href: "/messages", label: "Messages" },
   { href: "/letters", label: "Letters" },
   { href: "/pacts", label: "Pacts" },
   { href: "/settings", label: "Settings" },

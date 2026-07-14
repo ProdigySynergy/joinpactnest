@@ -212,6 +212,9 @@ model User {
   pacterRequestsReceived PacterRequest[]   @relation("PacterTo")
   pacterMutesMade      PacterMute[]        @relation("PacterMuteBy")
   pacterMutesReceived  PacterMute[]        @relation("PacterMuted")
+  e2eKey               E2eKey?
+  dmSent               DirectMessage[]     @relation("DmSender")
+  dmReceived           DirectMessage[]     @relation("DmRecipient")
   notificationPref     NotificationPreference?
   pushTokens           PushToken[]
   uploadedFiles        UploadedFile[]
@@ -560,6 +563,33 @@ model PacterMute {
 
   @@unique([userId, mutedUserId])
   @@index([userId])
+}
+
+/// Public half of a user's E2E identity key (private key never leaves the client).
+model E2eKey {
+  userId    String   @id
+  publicKey String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Ciphertext-only direct messages. Server cannot decrypt bodies.
+model DirectMessage {
+  id          String   @id @default(cuid())
+  senderId    String
+  recipientId String
+  ciphertext  String   @db.Text
+  iv          String
+  createdAt   DateTime @default(now())
+
+  sender      User     @relation("DmSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient   User     @relation("DmRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, recipientId, createdAt])
+  @@index([recipientId, senderId, createdAt])
+  @@index([createdAt])
 }
 
 model NotificationPreference {

@@ -72,6 +72,9 @@ export function PersonCard({
                     Write letter
                   </Link>
                 )}
+                <Link href={`/messages/${person.id}`} className="btn-secondary py-2 text-sm">
+                  Message
+                </Link>
                 <Link
                   href={`/safety?reportUser=${person.id}&name=${safetyName}`}
                   className="btn-danger py-2 text-sm"

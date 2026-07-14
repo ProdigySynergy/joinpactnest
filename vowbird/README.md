@@ -165,6 +165,7 @@ See [docs/TESTING.md](docs/TESTING.md) for package-level commands and how to add
 - **Profiles** — `/u/[username]` with progress, pact/match counts; optional gender (male/female/fluid) + tagline
 - **Creators** — Pact owners and match partners shown on pages with profile / letter / report / block actions
 - **Pactered** — Network of people from shared pacts + manual pacter requests; mute hides from list only
+- **E2E Messages** — Private DMs encrypted in the browser (ECDH P-256 + AES-GCM); server stores ciphertext only
 - **Vows** — Personal commitments with daily/weekly check-ins
 - **Partner matching** — Goal-based matching (not swiping)
 - **Letters** — Partner letters, future-self, group reflections
@@ -188,6 +189,7 @@ See the product spec for the full endpoint list. Key routes:
 - `POST /auth/register`, `POST /auth/login`
 - `GET/PATCH /users/me`, `GET /users/:username/profile`
 - `GET /pacters/me`, `GET/POST /pacters/requests`, `POST /pacters/mute`
+- `PUT /e2e/keys`, `GET /e2e/keys/:userId`, `GET /messages/conversations`, `GET /messages/with/:userId`, `POST /messages`
 - `GET/POST /vows`, `POST /check-ins`
 - `POST /moods`, `GET /moods?vowId|pactId|partnerMatchId=`, `POST /encouragements`
 - `POST /partner-requests`, `GET /matches/me`
@@ -196,6 +198,13 @@ See the product spec for the full endpoint list. Key routes:
 - `POST /reports`, `GET /reports/open?reportedUserId=`, `POST /reports/:id/comments` (max 2 follow-ups while OPEN)
 - `POST /blocks`, `GET /blocks/me`
 - `GET /admin/stats` (admin only)
+
+### E2E messages (assumptions)
+
+- Identity keys: ECDH **P-256**. Private key lives in the browser (`localStorage`); public key is registered via `PUT /e2e/keys`.
+- Message content is encrypted client-side with **AES-GCM** derived per peer. API accepts only `ciphertext` + `iv`.
+- Clearing site data without a key backup means prior messages cannot be decrypted on that device. Use **Download key backup** on `/messages`.
+- Blocked users cannot exchange DMs. Recipient must have an E2E key registered before the first send.
 
 ### Mood & accountability (assumptions)
 
