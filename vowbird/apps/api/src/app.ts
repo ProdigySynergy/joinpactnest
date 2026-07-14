@@ -19,6 +19,7 @@ import { notificationRoutes } from "./routes/notifications";
 import { adminRoutes } from "./routes/admin";
 import { publicPactRoutes } from "./routes/publicPacts";
 import { moodRoutes } from "./routes/moods";
+import { pacterRoutes } from "./routes/pacters";
 import { runMatching } from "./services/matching";
 
 export interface BuildAppOptions {
@@ -52,6 +53,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   await app.register(partnerRoutes);
   await app.register(checkInRoutes);
   await app.register(moodRoutes);
+  await app.register(pacterRoutes);
   await app.register(letterRoutes);
   await app.register(postRoutes);
   await app.register(reactionRoutes);

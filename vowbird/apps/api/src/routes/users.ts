@@ -4,6 +4,7 @@ import { sanitizePublicProfile, sanitizeUser } from "../lib/auth";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
 import { getUserOverallProgress } from "../services/progress";
+import { getPacterRelation } from "../services/pacters";
 import { saveUpload } from "../services/upload";
 
 async function buildProfileStats(userId: string) {
@@ -117,8 +118,6 @@ export async function userRoutes(app: FastifyInstance) {
     const stats = await buildProfileStats(user.id);
     const isSelf = user.id === request.userId;
 
-    // Veiled users: still show anonymized profile + aggregate stats (no vow titles if veiled? 
-    // Show aggregates always; hide detailed vow titles for veiled when viewer is not self)
     const profile = sanitizePublicProfile(user);
     const publicStats =
       user.profileMode === "VEILED" && !isSelf
@@ -131,10 +130,15 @@ export async function userRoutes(app: FastifyInstance) {
           }
         : stats;
 
+    const relation = isSelf
+      ? { isSelf: true as const }
+      : await getPacterRelation(request.userId!, user.id);
+
     return {
       profile,
       stats: publicStats,
       isSelf,
+      relation,
     };
   });
 }

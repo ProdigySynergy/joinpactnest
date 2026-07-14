@@ -163,6 +163,14 @@ export const createBlockSchema = z.object({
   reason: z.string().max(500).optional(),
 });
 
+export const createPacterRequestSchema = z.object({
+  toUserId: z.string().min(1),
+});
+
+export const mutePacterSchema = z.object({
+  mutedUserId: z.string().min(1),
+});
+
 export const pushTokenSchema = z.object({
   token: z.string().min(10),
   platform: z.enum(["IOS", "ANDROID", "WEB"]),

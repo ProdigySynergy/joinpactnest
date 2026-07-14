@@ -159,6 +159,13 @@ enum PushPlatform {
   WEB
 }
 
+enum PacterRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
 model User {
   id                   String       @id @default(cuid())
   name                 String
@@ -201,6 +208,10 @@ model User {
   reportComments       ReportComment[]
   blocksMade           Block[]             @relation("BlockBlocker")
   blocksReceived       Block[]             @relation("BlockBlocked")
+  pacterRequestsSent   PacterRequest[]     @relation("PacterFrom")
+  pacterRequestsReceived PacterRequest[]   @relation("PacterTo")
+  pacterMutesMade      PacterMute[]        @relation("PacterMuteBy")
+  pacterMutesReceived  PacterMute[]        @relation("PacterMuted")
   notificationPref     NotificationPreference?
   pushTokens           PushToken[]
   uploadedFiles        UploadedFile[]
@@ -519,6 +530,36 @@ model Block {
   @@unique([blockerId, blockedUserId])
   @@index([blockerId])
   @@index([blockedUserId])
+}
+
+model PacterRequest {
+  id         String              @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  status     PacterRequestStatus @default(PENDING)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  fromUser   User                @relation("PacterFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User                @relation("PacterTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@index([toUserId, status])
+  @@index([fromUserId, status])
+}
+
+/// Soft hide from Pactered list — does not leave shared pacts.
+model PacterMute {
+  id          String   @id @default(cuid())
+  userId      String
+  mutedUserId String
+  createdAt   DateTime @default(now())
+
+  user        User     @relation("PacterMuteBy", fields: [userId], references: [id], onDelete: Cascade)
+  mutedUser   User     @relation("PacterMuted", fields: [mutedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mutedUserId])
+  @@index([userId])
 }
 
 model NotificationPreference {

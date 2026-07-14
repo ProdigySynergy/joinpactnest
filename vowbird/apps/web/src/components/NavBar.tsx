@@ -8,6 +8,7 @@ const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/vows", label: "Vows" },
   { href: "/matches", label: "Partners" },
+  { href: "/pacters", label: "Pactered" },
   { href: "/letters", label: "Letters" },
   { href: "/pacts", label: "Pacts" },
   { href: "/settings", label: "Settings" },

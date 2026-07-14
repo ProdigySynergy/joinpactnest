@@ -164,6 +164,7 @@ See [docs/TESTING.md](docs/TESTING.md) for package-level commands and how to add
 - **Open Mode** — Visible profiles, avatars, public pacts
 - **Profiles** — `/u/[username]` with progress, pact/match counts; optional gender (male/female/fluid) + tagline
 - **Creators** — Pact owners and match partners shown on pages with profile / letter / report / block actions
+- **Pactered** — Network of people from shared pacts + manual pacter requests; mute hides from list only
 - **Vows** — Personal commitments with daily/weekly check-ins
 - **Partner matching** — Goal-based matching (not swiping)
 - **Letters** — Partner letters, future-self, group reflections
@@ -186,6 +187,7 @@ See the product spec for the full endpoint list. Key routes:
 
 - `POST /auth/register`, `POST /auth/login`
 - `GET/PATCH /users/me`, `GET /users/:username/profile`
+- `GET /pacters/me`, `GET/POST /pacters/requests`, `POST /pacters/mute`
 - `GET/POST /vows`, `POST /check-ins`
 - `POST /moods`, `GET /moods?vowId|pactId|partnerMatchId=`, `POST /encouragements`
 - `POST /partner-requests`, `GET /matches/me`

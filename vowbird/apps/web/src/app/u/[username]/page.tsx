@@ -2,11 +2,24 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GENDER_LABELS } from "@vowbird/shared";
 import { NavBar } from "@/components/NavBar";
 import { RequireAuth } from "@/components/RequireAuth";
 import { api } from "@/lib/api";
+
+type Relation =
+  | { isSelf: true }
+  | {
+      isSelf: false;
+      viaPact: boolean;
+      sharedPactCount: number;
+      viaRequest: boolean;
+      muted: boolean;
+      blocked: boolean;
+      outgoingRequest: { id: string; status: string } | null;
+      incomingRequest: { id: string; status: string } | null;
+    };
 
 type ProfileResponse = {
   profile: {
@@ -37,15 +50,55 @@ type ProfileResponse = {
     }>;
   };
   isSelf: boolean;
+  relation: Relation;
 };
 
 export default function UserProfilePage() {
   const { username } = useParams<{ username: string }>();
+  const qc = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: ["profile", username],
     queryFn: () => api<ProfileResponse>(`/users/${encodeURIComponent(username)}/profile`),
     enabled: !!username,
   });
+
+  async function refreshProfile() {
+    await qc.invalidateQueries({ queryKey: ["profile", username] });
+    await qc.invalidateQueries({ queryKey: ["pacters"] });
+    await qc.invalidateQueries({ queryKey: ["pacter-requests"] });
+  }
+
+  async function sendPacterRequest() {
+    if (!data) return;
+    await api("/pacters/requests", {
+      method: "POST",
+      body: JSON.stringify({ toUserId: data.profile.id }),
+    });
+    await refreshProfile();
+  }
+
+  async function acceptIncoming() {
+    if (!data || data.relation.isSelf || !data.relation.incomingRequest) return;
+    await api(`/pacters/requests/${data.relation.incomingRequest.id}/accept`, { method: "POST" });
+    await refreshProfile();
+  }
+
+  async function mute() {
+    if (!data) return;
+    await api("/pacters/mute", {
+      method: "POST",
+      body: JSON.stringify({ mutedUserId: data.profile.id }),
+    });
+    await refreshProfile();
+  }
+
+  async function unmute() {
+    if (!data) return;
+    await api(`/pacters/mute/${data.profile.id}`, { method: "DELETE" });
+    await refreshProfile();
+  }
+
+  const relation = data?.relation;
 
   return (
     <RequireAuth>
@@ -67,20 +120,75 @@ export default function UserProfilePage() {
                   <div className="mt-3 flex flex-wrap gap-2 text-sm text-navy/55">
                     <span className="badge">{data.profile.profileMode === "VEILED" ? "Veiled" : "Open"}</span>
                     {data.profile.gender && (
-                      <span className="badge">
-                        {GENDER_LABELS[data.profile.gender]}
+                      <span className="badge">{GENDER_LABELS[data.profile.gender]}</span>
+                    )}
+                    {relation && !relation.isSelf && relation.viaPact && (
+                      <span className="badge border-gold/40 bg-gold/10 text-navy">
+                        Shared pacts: {relation.sharedPactCount}
                       </span>
                     )}
-                    <span>
-                      Member since {new Date(data.profile.memberSince).toLocaleDateString()}
-                    </span>
+                    {relation && !relation.isSelf && relation.viaRequest && (
+                      <span className="badge border-sage/40 bg-sage/10 text-sage">Pactered</span>
+                    )}
+                    <span>Member since {new Date(data.profile.memberSince).toLocaleDateString()}</span>
                   </div>
                 </div>
-                {data.isSelf && (
-                  <Link href="/settings" className="btn-secondary py-2 text-sm">
-                    Edit profile
-                  </Link>
-                )}
+                <div className="flex flex-wrap gap-2">
+                  {data.isSelf ? (
+                    <>
+                      <Link href="/pacters" className="btn-secondary py-2 text-sm">
+                        Pactered
+                      </Link>
+                      <Link href="/settings" className="btn-secondary py-2 text-sm">
+                        Edit profile
+                      </Link>
+                    </>
+                  ) : (
+                    relation &&
+                    !relation.isSelf &&
+                    !relation.blocked && (
+                      <>
+                        {relation.incomingRequest?.status === "PENDING" && (
+                          <button type="button" className="btn-primary py-2 text-sm" onClick={acceptIncoming}>
+                            Accept pacter request
+                          </button>
+                        )}
+                        {!relation.viaRequest &&
+                          relation.outgoingRequest?.status !== "PENDING" &&
+                          relation.incomingRequest?.status !== "PENDING" && (
+                            <button type="button" className="btn-primary py-2 text-sm" onClick={sendPacterRequest}>
+                              Add as pacter
+                            </button>
+                          )}
+                        {relation.outgoingRequest?.status === "PENDING" && (
+                          <span className="rounded-xl border border-navy/15 px-4 py-2 text-sm text-navy/60">
+                            Request pending
+                          </span>
+                        )}
+                        {relation.viaRequest && (
+                          <span className="rounded-xl border border-sage/30 bg-sage/10 px-4 py-2 text-sm text-sage">
+                            You&apos;re pactered
+                          </span>
+                        )}
+                        {relation.muted ? (
+                          <button type="button" className="btn-secondary py-2 text-sm" onClick={unmute}>
+                            Unmute
+                          </button>
+                        ) : (
+                          <button type="button" className="btn-secondary py-2 text-sm" onClick={mute}>
+                            Mute in Pactered
+                          </button>
+                        )}
+                        <Link
+                          href={`/safety?reportUser=${data.profile.id}&name=${encodeURIComponent(data.profile.displayName)}`}
+                          className="btn-danger py-2 text-sm"
+                        >
+                          Report
+                        </Link>
+                      </>
+                    )
+                  )}
+                </div>
               </div>
               {data.profile.bio && (
                 <p className="mt-4 whitespace-pre-wrap text-navy/75">{data.profile.bio}</p>
