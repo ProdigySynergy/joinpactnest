@@ -19,14 +19,17 @@ export default function HomeScreen() {
   return (
     <ScrollView style={styles.screen}>
       <Text style={styles.subtitle}>Hello, {user?.displayName}</Text>
-      <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+      <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
         <TouchableOpacity style={[styles.btnPrimary, { flex: 1 }]} onPress={() => router.push("/vows/new")}>
           <Text style={styles.btnPrimaryText}>New vow</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.btnSecondary, { flex: 1 }]} onPress={() => router.push("/vows/checkin")}>
+        <TouchableOpacity style={[styles.btnSecondary, { flex: 1, marginTop: 0 }]} onPress={() => router.push("/vows/checkin")}>
           <Text style={styles.btnSecondaryText}>Check in</Text>
         </TouchableOpacity>
       </View>
+      <TouchableOpacity style={[styles.btnSecondary, { marginBottom: 16 }]} onPress={() => router.push("/messages")}>
+        <Text style={styles.btnSecondaryText}>Messages</Text>
+      </TouchableOpacity>
 
       <Text style={{ fontWeight: "700", marginBottom: 8, color: colors.navy }}>Active vows</Text>
       {(vows?.vows.filter((v) => v.status === "ACTIVE") || []).map((v) => (

@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity } from "react-native";
+import { MoodFeed } from "../../components/MoodFeed";
 import { useAuth } from "../../lib/auth-context";
 import { api } from "../../lib/api";
 import { colors, styles } from "../../lib/theme";
@@ -145,6 +146,8 @@ export default function PactDetailScreen() {
           {l.user.displayName} 🔥 {l.currentStreak}
         </Text>
       ))}
+
+      {(isOwner || isMember) && id ? <MoodFeed context={{ pactId: id }} /> : null}
     </ScrollView>
   );
 }

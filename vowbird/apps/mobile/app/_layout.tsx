@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
+import { E2eKeyBootstrap } from "../components/E2eKeyBootstrap";
 import { AuthProvider } from "../lib/auth-context";
 
 export default function RootLayout() {
@@ -10,6 +11,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <E2eKeyBootstrap />
         <StatusBar style="light" />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
@@ -25,8 +27,12 @@ export default function RootLayout() {
           <Stack.Screen name="pacts/[id]" options={{ headerShown: true, title: "Pact" }} />
           <Stack.Screen name="pacts/discover" options={{ headerShown: true, title: "Discover" }} />
           <Stack.Screen name="pacts/feed" options={{ headerShown: true, title: "Room Feed" }} />
+          <Stack.Screen name="messages/index" options={{ headerShown: true, title: "Messages" }} />
+          <Stack.Screen name="messages/[userId]" options={{ headerShown: true, title: "Chat" }} />
+          <Stack.Screen name="u/[username]" options={{ headerShown: true, title: "Profile" }} />
+          <Stack.Screen name="pacters" options={{ headerShown: true, title: "Pactered" }} />
           <Stack.Screen name="settings" options={{ headerShown: true, title: "Settings" }} />
-          <Stack.Screen name="report" options={{ headerShown: true, title: "Report & Block" }} />
+          <Stack.Screen name="report" options={{ headerShown: true, title: "Safety" }} />
         </Stack>
       </AuthProvider>
     </QueryClientProvider>

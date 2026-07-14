@@ -171,7 +171,7 @@ See [docs/TESTING.md](docs/TESTING.md) for package-level commands and how to add
 - **Partner matching** — Auto-queue + discover/direct invites; **one active partner per vow** (free plan also caps 1 match account-wide)
 - **Letters** — Partner letters, future-self, group reflections
 - **Pacts** — Public, invite-only, and private circles
-- **Mobile (Expo)** — Auth, vows, check-ins (photo), partner discover/incoming, letters (typed), create/join pacts + invite codes, settings; EAS for store builds (see Mobile section below)
+- **Mobile (Expo)** — Auth, vows, check-ins (photo + MISSED/history), partner discover/incoming/rematch, letters (typed), create/join pacts + invite codes, settings, profiles, pacters, mood feed, E2E DMs (SecureStore keys; backup via clipboard); EAS for store builds (see Mobile section below)
 - **Public pact pages** — Shareable `/p/[slug]` profiles (SEO + social), explore hub at `/explore`
 - **Mood check** — Freeform mood updates (4h cooldown · soft 8/day cap); partners send one-tap cheer chips
 - **No judgement zone** — Soft misses vs call-outs. Toggle on **pacts** (create/settings); shown on public `/p/[slug]` + explore when on. For partner vows, toggle lives on the **match** page.
@@ -254,17 +254,24 @@ Before your first EAS build, add app icons to `apps/mobile/assets/`:
 
 Or run `npx expo prebuild` to generate defaults.
 
-### Mobile P0 (parity shipped)
+### Mobile P0 + P1 (parity shipped)
 
-| Screen | Path |
-|--------|------|
-| Create pact | `/pacts/new` |
+| Area | Path |
+|------|------|
+| Create pact / invite code | `/pacts/new`, Pacts tab |
 | Partner discover + incoming | Partners tab |
-| Settings | `/settings` (from Profile) |
-| Join by invite code | Pacts tab + pact detail |
-| Letter targeting | Type picker; match → partner letter query params |
+| Settings | `/settings` |
+| Letter targeting | `/letters/new` |
+| Messages + E2E | `/messages`, `/messages/[userId]` (keys in SecureStore; copy/restore backup) |
+| Profiles | `/u/[username]` |
+| Pacters | `/pacters` |
+| Mood feed | Vow / match / pact detail |
+| Safety | `/report` (open report + follow-ups, self-guard) |
+| Vow depth | History, MISSED, category/frequency on create |
 
 Dev: set `EXPO_PUBLIC_API_URL` to your LAN IP (not `localhost`) when using a physical device. Store builds: see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) § Mobile EAS — Android `preview` = APK, `production` = AAB; iOS needs a Mac or EAS Submit.
+
+E2E on mobile uses `@noble/curves` + `@noble/ciphers` with the same SPKI/PKCS8 + AES-GCM wire format as web Web Crypto, so web↔mobile decrypt works when both parties have keys.
 
 ## License
 

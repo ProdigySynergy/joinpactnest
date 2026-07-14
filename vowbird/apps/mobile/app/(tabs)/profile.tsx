@@ -14,11 +14,22 @@ export default function ProfileScreen() {
         <Text style={{ color: colors.muted, marginBottom: 8 }}>@{user.username}</Text>
       ) : null}
       <Text style={styles.subtitle}>Mode: {user?.profileMode}</Text>
+      {user?.username ? (
+        <TouchableOpacity style={styles.btnSecondary} onPress={() => router.push(`/u/${user.username}`)}>
+          <Text style={styles.btnSecondaryText}>My public profile</Text>
+        </TouchableOpacity>
+      ) : null}
       <TouchableOpacity style={styles.btnPrimary} onPress={() => router.push("/settings")}>
         <Text style={styles.btnPrimaryText}>Settings</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={styles.btnSecondary} onPress={() => router.push("/messages")}>
+        <Text style={styles.btnSecondaryText}>Messages</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.btnSecondary} onPress={() => router.push("/pacters")}>
+        <Text style={styles.btnSecondaryText}>Pactered</Text>
+      </TouchableOpacity>
       <TouchableOpacity style={styles.btnSecondary} onPress={() => router.push("/report")}>
-        <Text style={styles.btnSecondaryText}>Report & block</Text>
+        <Text style={styles.btnSecondaryText}>Safety</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.btnSecondary, { marginTop: 24 }]}
