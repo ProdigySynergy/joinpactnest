@@ -4,6 +4,7 @@ import {
   MOOD_TYPES,
   REACTION_TYPES,
   TONE_OPTIONS,
+  VIBE_TYPES,
   VOW_CATEGORIES,
 } from "./constants";
 
@@ -73,7 +74,13 @@ export const updatePactSettingsSchema = z.object({
   description: z.string().max(2000).optional(),
   noJudgementZone: z.boolean().optional(),
   leaderboardEnabled: z.boolean().optional(),
+  vibeLeaderboardEnabled: z.boolean().optional(),
   endDate: z.string().nullable().optional(),
+});
+
+export const updateMatchVibeSettingsSchema = z.object({
+  vibesPublic: z.boolean().optional(),
+  vibeLeaderboardEnabled: z.boolean().optional(),
 });
 
 export const createMoodUpdateSchema = z
@@ -93,6 +100,24 @@ export const createEncouragementSchema = z.object({
   sticker: z.enum(ENCOURAGEMENT_STICKERS as unknown as [string, ...string[]]),
   note: z.string().max(140).optional(),
 });
+
+export const createVibeCheckSchema = z
+  .object({
+    vibe: z.enum(VIBE_TYPES as unknown as [string, ...string[]]),
+    note: z.string().max(280).optional(),
+    pactId: z.string().optional(),
+    partnerMatchId: z.string().optional(),
+  })
+  .refine((d) => d.pactId || d.partnerMatchId, {
+    message: "pactId or partnerMatchId required",
+  })
+  .refine((d) => !(d.pactId && d.partnerMatchId), {
+    message: "Provide only one of pactId or partnerMatchId",
+  })
+  .refine(
+    (d) => d.vibe !== "CUSTOM" || (d.note && d.note.trim().length > 0),
+    { message: "Custom vibe needs a short note" }
+  );
 
 export const joinByCodeSchema = z.object({
   inviteCode: z.string().min(4).max(20),

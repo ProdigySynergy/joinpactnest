@@ -12,6 +12,7 @@ import {
   siteFeedUrl,
 } from "@/lib/public-pacts";
 import { PublicPactJoin } from "./PublicPactJoin";
+import { PublicPactVibes, fetchPublicPactVibes } from "./PublicPactVibes";
 import { SharePactButton } from "./SharePactButton";
 
 type Props = { params: { slug: string } };
@@ -68,6 +69,8 @@ export default async function PublicPactPage({ params }: Props) {
   const data = await fetchPublicPact(params.slug);
   if (!data?.pact || !data?.owner) notFound();
 
+  const vibeData = await fetchPublicPactVibes(params.slug);
+
   const { pact, stats, leaders, owner } = data;
   const shareUrl = publicPactShareUrl(pact.slug);
   const rhythm =
@@ -123,6 +126,8 @@ export default async function PublicPactPage({ params }: Props) {
       <section className="mx-auto max-w-3xl px-4 py-10">
         <PersonCard person={owner} roleLabel="Pact creator" variant="public" />
       </section>
+
+      {vibeData && <PublicPactVibes data={vibeData} />}
 
       <section className="mx-auto max-w-3xl px-4 py-12">
         <h2 className="mb-2 text-2xl font-bold">Why people are locking in</h2>

@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView, Share, Text, TextInput, TouchableOpacity } from "react-native";
 import { MoodFeed } from "../../components/MoodFeed";
+import { VibeCheckFeed } from "../../components/VibeCheckFeed";
 import { useAuth } from "../../lib/auth-context";
 import { api } from "../../lib/api";
 import { publicPactAppUrl, publicPactWebUrl } from "../../lib/share";
@@ -172,7 +173,12 @@ export default function PactDetailScreen() {
         </Text>
       ))}
 
-      {(isOwner || isMember) && id ? <MoodFeed context={{ pactId: id }} /> : null}
+      {(isOwner || isMember) && id ? (
+        <>
+          <VibeCheckFeed context={{ pactId: id }} />
+          <MoodFeed context={{ pactId: id }} />
+        </>
+      ) : null}
     </ScrollView>
   );
 }

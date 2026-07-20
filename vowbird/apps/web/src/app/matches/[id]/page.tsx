@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MoodFeed } from "@/components/MoodFeed";
+import { VibeCheckFeed } from "@/components/VibeCheckFeed";
 import { NavBar } from "@/components/NavBar";
 import { PersonCard } from "@/components/PersonCard";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -42,6 +43,8 @@ export default function MatchDetailPage() {
         }>;
         leaderboardEnabled: boolean;
         noJudgementZone: boolean;
+        vibesPublic?: boolean;
+        vibeLeaderboardEnabled?: boolean;
         isVowOwner: boolean;
       }>(`/matches/${id}`),
   });
@@ -69,6 +72,18 @@ export default function MatchDetailPage() {
       body: JSON.stringify({ [field]: value }),
     });
     qc.invalidateQueries({ queryKey: ["match", id] });
+  }
+
+  async function toggleVibeSetting(
+    field: "vibesPublic" | "vibeLeaderboardEnabled",
+    value: boolean
+  ) {
+    await api(`/matches/${id}/vibe-settings`, {
+      method: "PATCH",
+      body: JSON.stringify({ [field]: value }),
+    });
+    qc.invalidateQueries({ queryKey: ["match", id] });
+    qc.invalidateQueries({ queryKey: ["vibes", { partnerMatchId: id }] });
   }
 
   return (
@@ -145,6 +160,52 @@ export default function MatchDetailPage() {
               </div>
             )}
 
+            <div className="card space-y-4">
+              <h2 className="font-semibold">Vibe Check settings</h2>
+              <p className="text-sm text-navy/60">Either partner can change these.</p>
+              <label className="flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={!!data?.vibesPublic}
+                  onChange={(e) => toggleVibeSetting("vibesPublic", e.target.checked)}
+                />
+                <span>
+                  <span className="font-medium">Public duo vibes</span>
+                  <span className="mt-0.5 block text-navy/60">
+                    Let anyone peek at this pair&apos;s vibe feed (names stay mode-safe).
+                    {data?.vibesPublic && (
+                      <>
+                        {" "}
+                        <a
+                          href={`/vibe/${id}`}
+                          className="text-gold hover:underline"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open public page
+                        </a>
+                      </>
+                    )}
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={data?.vibeLeaderboardEnabled !== false}
+                  onChange={(e) => toggleVibeSetting("vibeLeaderboardEnabled", e.target.checked)}
+                />
+                <span>
+                  <span className="font-medium">Vibe leaderboard</span>
+                  <span className="mt-0.5 block text-navy/60">
+                    Rank by most vibe drops this week.
+                  </span>
+                </span>
+              </label>
+            </div>
+
             {data?.leaderboardEnabled ? (
               (data.leaderboard?.length ?? 0) > 0 ? (
                 <div className="card">
@@ -169,6 +230,7 @@ export default function MatchDetailPage() {
               <div className="card text-sm text-navy/60">Partner leaderboard is turned off for this match.</div>
             )}
 
+            <VibeCheckFeed context={{ partnerMatchId: id }} />
             <MoodFeed context={{ partnerMatchId: id }} />
           </>
         )}

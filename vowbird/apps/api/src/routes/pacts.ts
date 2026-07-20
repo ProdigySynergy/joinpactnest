@@ -139,6 +139,7 @@ export async function pactRoutes(app: FastifyInstance) {
       },
       leaderboard,
       leaderboardEnabled: pact.leaderboardEnabled,
+      vibeLeaderboardEnabled: pact.vibeLeaderboardEnabled,
     };
   });
 
@@ -162,6 +163,7 @@ export async function pactRoutes(app: FastifyInstance) {
         description: data.description,
         noJudgementZone: data.noJudgementZone,
         leaderboardEnabled: data.leaderboardEnabled,
+        vibeLeaderboardEnabled: data.vibeLeaderboardEnabled,
         endDate:
           data.endDate === undefined
             ? undefined

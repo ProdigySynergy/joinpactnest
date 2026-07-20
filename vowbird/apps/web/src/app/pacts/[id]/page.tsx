@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormEvent, useState } from "react";
 import { MoodFeed } from "@/components/MoodFeed";
+import { VibeCheckFeed } from "@/components/VibeCheckFeed";
 import { NavBar } from "@/components/NavBar";
 import { PersonCard } from "@/components/PersonCard";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -34,6 +35,7 @@ export default function PactDetailPage() {
           ownerId: string;
           noJudgementZone: boolean;
           leaderboardEnabled: boolean;
+          vibeLeaderboardEnabled?: boolean;
           owner: {
             id: string;
             username: string;
@@ -98,12 +100,18 @@ export default function PactDetailPage() {
     qc.invalidateQueries({ queryKey: ["pact-posts", id] });
   }
 
-  async function toggleSetting(field: "noJudgementZone" | "leaderboardEnabled", value: boolean) {
+  async function toggleSetting(
+    field: "noJudgementZone" | "leaderboardEnabled" | "vibeLeaderboardEnabled",
+    value: boolean
+  ) {
     await api(`/pacts/${id}`, {
       method: "PATCH",
       body: JSON.stringify({ [field]: value }),
     });
     qc.invalidateQueries({ queryKey: ["pact", id] });
+    if (field === "vibeLeaderboardEnabled") {
+      qc.invalidateQueries({ queryKey: ["vibes", { pactId: id }] });
+    }
   }
 
   const pact = data?.pact;
@@ -198,12 +206,22 @@ export default function PactDetailPage() {
                     checked={pact.leaderboardEnabled}
                     onChange={(e) => toggleSetting("leaderboardEnabled", e.target.checked)}
                   />
-                  <span>Show leaderboard</span>
+                  <span>Show streak leaderboard</span>
+                </label>
+                <label className="flex items-start gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={pact.vibeLeaderboardEnabled !== false}
+                    onChange={(e) => toggleSetting("vibeLeaderboardEnabled", e.target.checked)}
+                  />
+                  <span>Show vibe leaderboard</span>
                 </label>
               </div>
             )}
 
-            <div className="mb-6">
+            <div className="mb-6 space-y-6">
+              <VibeCheckFeed context={{ pactId: id }} />
               <MoodFeed context={{ pactId: id }} />
             </div>
 

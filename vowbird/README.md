@@ -161,6 +161,7 @@ See [docs/TESTING.md](docs/TESTING.md) for package-level commands and how to add
 
 ## Features
 
+- **Vibe Check** — Cheesy daily activity statuses on partner matches & pacts (Driving, Gym, Locked in…). See [docs/VIBE_CHECK.md](docs/VIBE_CHECK.md)
 - **Veiled Mode** — Anonymous accountability with generated aliases
 - **Open Mode** — Visible profiles, avatars, public pacts
 - **Profiles** — `/u/[username]` with progress, pact/match counts; optional gender (male/female/fluid) + tagline

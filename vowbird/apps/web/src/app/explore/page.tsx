@@ -18,17 +18,39 @@ export const metadata: Metadata = {
   },
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+async function fetchPublicVibeDuos() {
+  try {
+    const res = await fetch(`${API_URL}/public/vibes/matches`, { next: { revalidate: 30 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.matches || []) as Array<{
+      id: string;
+      vowTitle: string;
+      partners: Array<{ displayName: string }>;
+      latestVibe: {
+        label: string;
+        note: string | null;
+        user: { displayName: string };
+      } | null;
+    }>;
+  } catch {
+    return [];
+  }
+}
+
 export default async function ExplorePage() {
-  const pacts = await fetchPublicPactList();
+  const [pacts, vibeDuos] = await Promise.all([fetchPublicPactList(), fetchPublicVibeDuos()]);
 
   return (
     <div className="min-h-screen bg-cream">
       <PublicNav />
       <main className="mx-auto max-w-4xl px-4 py-12">
         <p className="mb-2 text-sm font-semibold tracking-wide text-gold">Discover</p>
-        <h1 className="text-3xl font-bold md:text-4xl">Public pacts you can join</h1>
+        <h1 className="text-3xl font-bold md:text-4xl">Public pacts & vibe duos</h1>
         <p className="mt-3 max-w-2xl text-navy/65">
-          Open circles with live momentum. Create an account to join — share any pact page anywhere.
+          Open circles with live momentum — plus accountability pairs who made their vibes public.
         </p>
         <p className="mt-2 text-sm">
           <a href={exploreFeedUrl()} className="text-gold hover:underline">
@@ -40,7 +62,34 @@ export default async function ExplorePage() {
           </a>
         </p>
 
-        <div className="mt-10 space-y-4">
+        {vibeDuos.length > 0 && (
+          <section className="mt-10">
+            <h2 className="mb-4 text-xl font-bold">Public vibe duos</h2>
+            <div className="space-y-3">
+              {vibeDuos.map((duo) => (
+                <Link
+                  key={duo.id}
+                  href={`/vibe/${duo.id}`}
+                  className="block rounded-2xl border border-gold/30 bg-gold/5 p-5 transition hover:border-gold"
+                >
+                  <p className="font-semibold">
+                    {duo.partners.map((p) => p.displayName).join(" & ")}
+                  </p>
+                  <p className="mt-1 text-sm text-navy/60">{duo.vowTitle}</p>
+                  {duo.latestVibe && (
+                    <p className="mt-2 text-sm">
+                      Latest: {duo.latestVibe.user.displayName} · {duo.latestVibe.label}
+                      {duo.latestVibe.note ? ` — ${duo.latestVibe.note}` : ""}
+                    </p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <h2 className="mb-4 mt-12 text-xl font-bold">Public pacts</h2>
+        <div className="space-y-4">
           {pacts.length === 0 && (
             <p className="text-navy/50">No public pacts yet. Check back soon.</p>
           )}

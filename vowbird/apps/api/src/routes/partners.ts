@@ -415,6 +415,8 @@ export async function partnerRoutes(app: FastifyInstance) {
       leaderboard,
       leaderboardEnabled: match.vow.leaderboardEnabled,
       noJudgementZone: match.vow.noJudgementZone,
+      vibesPublic: match.vibesPublic,
+      vibeLeaderboardEnabled: match.vibeLeaderboardEnabled,
       isVowOwner,
     };
   });

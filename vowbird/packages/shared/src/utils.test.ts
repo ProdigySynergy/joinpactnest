@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createVowSchema,
+  createVibeCheckSchema,
   loginSchema,
   registerSchema,
 } from "./schemas";
@@ -107,5 +108,21 @@ describe("Zod schemas", () => {
       startDate: "2026-07-04",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("validates vibe check for partner match", () => {
+    const result = createVibeCheckSchema.safeParse({
+      vibe: "DRIVING",
+      partnerMatchId: "match_1",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("requires note for CUSTOM vibe", () => {
+    const result = createVibeCheckSchema.safeParse({
+      vibe: "CUSTOM",
+      pactId: "pact_1",
+    });
+    expect(result.success).toBe(false);
   });
 });

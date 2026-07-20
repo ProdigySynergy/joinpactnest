@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { MoodFeed } from "../../components/MoodFeed";
+import { VibeCheckFeed } from "../../components/VibeCheckFeed";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
 import { colors, styles } from "../../lib/theme";
@@ -37,6 +38,8 @@ export default function MatchDetailScreen() {
         }>;
         leaderboardEnabled: boolean;
         noJudgementZone: boolean;
+        vibesPublic?: boolean;
+        vibeLeaderboardEnabled?: boolean;
         isVowOwner: boolean;
       }>(`/matches/${id}`),
   });
@@ -66,6 +69,18 @@ export default function MatchDetailScreen() {
       body: JSON.stringify({ [field]: value }),
     });
     qc.invalidateQueries({ queryKey: ["match", id] });
+  }
+
+  async function toggleVibeSetting(
+    field: "vibesPublic" | "vibeLeaderboardEnabled",
+    value: boolean
+  ) {
+    await api(`/matches/${id}/vibe-settings`, {
+      method: "PATCH",
+      body: JSON.stringify({ [field]: value }),
+    });
+    qc.invalidateQueries({ queryKey: ["match", id] });
+    qc.invalidateQueries({ queryKey: ["vibes", { partnerMatchId: id }] });
   }
 
   return (
@@ -145,6 +160,33 @@ export default function MatchDetailScreen() {
             </View>
           )}
 
+          <View style={styles.card}>
+            <Text style={{ fontWeight: "700", color: colors.navy, marginBottom: 8 }}>
+              Vibe Check settings
+            </Text>
+            <TouchableOpacity
+              style={styles.btnSecondary}
+              onPress={() => toggleVibeSetting("vibesPublic", !data?.vibesPublic)}
+            >
+              <Text style={styles.btnSecondaryText}>
+                Public duo vibes: {data?.vibesPublic ? "ON" : "OFF"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.btnSecondary}
+              onPress={() =>
+                toggleVibeSetting(
+                  "vibeLeaderboardEnabled",
+                  !(data?.vibeLeaderboardEnabled ?? true)
+                )
+              }
+            >
+              <Text style={styles.btnSecondaryText}>
+                Vibe leaderboard: {data?.vibeLeaderboardEnabled === false ? "OFF" : "ON"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {data?.leaderboardEnabled ? (
             <View style={styles.card}>
               <Text style={{ fontWeight: "700", color: colors.navy, marginBottom: 8 }}>
@@ -165,6 +207,7 @@ export default function MatchDetailScreen() {
             </Text>
           )}
 
+          <VibeCheckFeed context={{ partnerMatchId: id! }} />
           <MoodFeed context={{ partnerMatchId: id! }} />
 
           <TouchableOpacity style={styles.btnSecondary} onPress={rematch}>

@@ -80,6 +80,52 @@ export const MOOD_UPDATE_COOLDOWN_HOURS = 4;
 /** Soft daily cap on mood updates (UTC day). */
 export const MAX_MOOD_UPDATES_PER_DAY = 8;
 
+/** Cheesy activity presets for Vibe Check (separate from mood feelings). */
+export const VIBE_TYPES = [
+  "DRIVING",
+  "AT_THE_GYM",
+  "STUDYING",
+  "WORKING",
+  "COOKING",
+  "OUT",
+  "DRINKS",
+  "RESTING",
+  "LOCKED_IN",
+  "CUSTOM",
+] as const;
+
+export const VIBE_LABELS: Record<(typeof VIBE_TYPES)[number], string> = {
+  DRIVING: "Driving",
+  AT_THE_GYM: "At the gym",
+  STUDYING: "Studying",
+  WORKING: "Working",
+  COOKING: "Cooking",
+  OUT: "Out & about",
+  DRINKS: "Drinks",
+  RESTING: "Resting",
+  LOCKED_IN: "Locked in",
+  CUSTOM: "Custom vibe",
+};
+
+export const VIBE_EMOJIS: Record<(typeof VIBE_TYPES)[number], string> = {
+  DRIVING: "🚗",
+  AT_THE_GYM: "💪",
+  STUDYING: "📚",
+  WORKING: "💻",
+  COOKING: "🍳",
+  OUT: "✨",
+  DRINKS: "🥂",
+  RESTING: "😴",
+  LOCKED_IN: "🔒",
+  CUSTOM: "✨",
+};
+
+/** Minutes between vibe drops (lighter than mood cooldown). */
+export const VIBE_UPDATE_COOLDOWN_MINUTES = 15;
+
+/** Soft daily cap on vibe checks (UTC day). */
+export const MAX_VIBE_CHECKS_PER_DAY = 24;
+
 export const VEILED_ALIASES = [
   "Quiet Falcon",
   "Blue Lantern",

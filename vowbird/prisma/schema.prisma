@@ -126,6 +126,20 @@ enum EncouragementSticker {
   ROOTING_FOR_YOU
 }
 
+// Cheesy daily activity statuses (Vibe Check) — separate from MoodType feelings.
+enum VibeType {
+  DRIVING
+  AT_THE_GYM
+  STUDYING
+  WORKING
+  COOKING
+  OUT
+  DRINKS
+  RESTING
+  LOCKED_IN
+  CUSTOM
+}
+
 enum LetterType {
   PARTNER_LETTER
   FUTURE_SELF
@@ -204,6 +218,7 @@ model User {
   roomPosts            RoomPost[]
   reactions            Reaction[]
   moodUpdates          MoodUpdate[]
+  vibeChecks           VibeCheck[]
   encouragementsSent   Encouragement[]     @relation("EncouragementFrom")
   encouragementsReceived Encouragement[]   @relation("EncouragementTo")
   reportsMade          Report[]            @relation("ReportReporter")
@@ -275,6 +290,7 @@ model Pact {
   status               PactStatus         @default(ACTIVE)
   noJudgementZone      Boolean            @default(false)
   leaderboardEnabled   Boolean            @default(true)
+  vibeLeaderboardEnabled Boolean          @default(true)
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
@@ -284,6 +300,7 @@ model Pact {
   letters              Letter[]
   roomPosts            RoomPost[]
   moodUpdates          MoodUpdate[]
+  vibeChecks           VibeCheck[]
 
   @@index([ownerId])
   @@index([privacy])
@@ -333,25 +350,48 @@ model PartnerRequest {
 }
 
 model PartnerMatch {
-  id        String             @id @default(cuid())
-  vowId     String
-  userAId   String
-  userBId   String
-  status    PartnerMatchStatus @default(ACTIVE)
-  matchMode ProfileMode        @default(VEILED)
-  createdAt DateTime           @default(now())
-  endedAt   DateTime?
+  id                     String             @id @default(cuid())
+  vowId                  String
+  userAId                String
+  userBId                String
+  status                 PartnerMatchStatus @default(ACTIVE)
+  matchMode              ProfileMode        @default(VEILED)
+  vibesPublic            Boolean            @default(false)
+  vibeLeaderboardEnabled Boolean            @default(true)
+  createdAt              DateTime           @default(now())
+  endedAt                DateTime?
 
   vow       Vow                @relation(fields: [vowId], references: [id], onDelete: Cascade)
   userA     User               @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
   userB     User               @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
   letters   Letter[]
   moodUpdates MoodUpdate[]
+  vibeChecks  VibeCheck[]
 
   @@index([userAId])
   @@index([userBId])
   @@index([vowId])
   @@index([status])
+  @@index([vibesPublic])
+}
+
+model VibeCheck {
+  id             String        @id @default(cuid())
+  userId         String
+  pactId         String?
+  partnerMatchId String?
+  vibe           VibeType
+  note           String?       @db.VarChar(280)
+  createdAt      DateTime      @default(now())
+
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pact           Pact?         @relation(fields: [pactId], references: [id], onDelete: Cascade)
+  partnerMatch   PartnerMatch? @relation(fields: [partnerMatchId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([pactId])
+  @@index([partnerMatchId])
+  @@index([createdAt])
 }
 
 model MoodUpdate {
