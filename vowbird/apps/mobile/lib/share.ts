@@ -18,6 +18,14 @@ export function publicPactAppUrl(slug: string): string {
   return `vowbird://p/${encodeURIComponent(slug)}`;
 }
 
+export function publicVibeWebUrl(matchId: string): string {
+  return `${SITE_URL}/vibe/${encodeURIComponent(matchId)}`;
+}
+
+export function publicVibeAppUrl(matchId: string): string {
+  return `vowbird://vibe/${encodeURIComponent(matchId)}`;
+}
+
 /** Humanize API category enum for display. */
 export function formatCategory(category: string): string {
   if (!category) return category;

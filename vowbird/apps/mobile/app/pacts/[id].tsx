@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Alert, ScrollView, Share, Text, TextInput, TouchableOpacity } from "react-native";
+import { Alert, ScrollView, Share, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { MoodFeed } from "../../components/MoodFeed";
 import { VibeCheckFeed } from "../../components/VibeCheckFeed";
 import { useAuth } from "../../lib/auth-context";
@@ -27,6 +27,9 @@ export default function PactDetailScreen() {
           privacy: string;
           slug?: string;
           ownerId: string;
+          noJudgementZone?: boolean;
+          leaderboardEnabled?: boolean;
+          vibeLeaderboardEnabled?: boolean;
           members: Array<{ user: { id: string; displayName: string } }>;
         };
         leaderboard: Array<{ user: { displayName: string }; currentStreak: number }>;
@@ -37,6 +40,20 @@ export default function PactDetailScreen() {
   const isOwner = Boolean(pact && user?.id === pact.ownerId);
   const isMember = Boolean(pact && user && pact.members.some((m) => m.user.id === user.id));
   const canJoin = Boolean(pact && user && !isOwner && !isMember);
+
+  async function toggleSetting(
+    field: "noJudgementZone" | "leaderboardEnabled" | "vibeLeaderboardEnabled",
+    value: boolean
+  ) {
+    await api(`/pacts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ [field]: value }),
+    });
+    qc.invalidateQueries({ queryKey: ["pact", id] });
+    if (field === "vibeLeaderboardEnabled") {
+      qc.invalidateQueries({ queryKey: ["vibes", { pactId: id }] });
+    }
+  }
 
   async function join() {
     try {
@@ -144,6 +161,45 @@ export default function PactDetailScreen() {
             {pact.inviteCode}
           </Text>
         </TouchableOpacity>
+      )}
+
+      {isOwner && pact && (
+        <View style={styles.card}>
+          <Text style={{ fontWeight: "700", color: colors.navy, marginBottom: 8 }}>
+            Pact settings
+          </Text>
+          <TouchableOpacity
+            style={styles.btnSecondary}
+            onPress={() => toggleSetting("noJudgementZone", !pact.noJudgementZone)}
+          >
+            <Text style={styles.btnSecondaryText}>
+              No judgement: {pact.noJudgementZone ? "ON" : "OFF"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.btnSecondary}
+            onPress={() =>
+              toggleSetting("leaderboardEnabled", !(pact.leaderboardEnabled ?? true))
+            }
+          >
+            <Text style={styles.btnSecondaryText}>
+              Streak leaderboard: {pact.leaderboardEnabled === false ? "OFF" : "ON"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.btnSecondary}
+            onPress={() =>
+              toggleSetting(
+                "vibeLeaderboardEnabled",
+                !(pact.vibeLeaderboardEnabled ?? true)
+              )
+            }
+          >
+            <Text style={styles.btnSecondaryText}>
+              Vibe leaderboard: {pact.vibeLeaderboardEnabled === false ? "OFF" : "ON"}
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {(isOwner || isMember) && (

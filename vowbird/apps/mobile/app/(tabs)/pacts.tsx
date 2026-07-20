@@ -46,7 +46,7 @@ export default function PactsTab() {
         <Text style={styles.btnPrimaryText}>Create pact</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.btnSecondary} onPress={() => router.push("/pacts/discover")}>
-        <Text style={styles.btnSecondaryText}>Explore public pacts</Text>
+        <Text style={styles.btnSecondaryText}>Explore</Text>
       </TouchableOpacity>
 
       <Text style={{ fontWeight: "700", marginTop: 20, marginBottom: 8, color: colors.navy }}>

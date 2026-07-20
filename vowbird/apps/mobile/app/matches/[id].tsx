@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, Share, Text, TouchableOpacity, View } from "react-native";
 import { MoodFeed } from "../../components/MoodFeed";
 import { VibeCheckFeed } from "../../components/VibeCheckFeed";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
+import { publicVibeAppUrl, publicVibeWebUrl } from "../../lib/share";
 import { colors, styles } from "../../lib/theme";
 
 type Person = {
@@ -81,6 +82,16 @@ export default function MatchDetailScreen() {
     });
     qc.invalidateQueries({ queryKey: ["match", id] });
     qc.invalidateQueries({ queryKey: ["vibes", { partnerMatchId: id }] });
+  }
+
+  async function sharePublicVibes() {
+    if (!id || !match) return;
+    const web = publicVibeWebUrl(id);
+    await Share.share({
+      message: `Our accountability vibes on Vowbird (${match.vow.title})\n${web}\n\nOpen in app: ${publicVibeAppUrl(id)}`,
+      title: "Public Vibe Check",
+      url: web,
+    });
   }
 
   return (
@@ -172,6 +183,19 @@ export default function MatchDetailScreen() {
                 Public duo vibes: {data?.vibesPublic ? "ON" : "OFF"}
               </Text>
             </TouchableOpacity>
+            {data?.vibesPublic ? (
+              <>
+                <TouchableOpacity
+                  style={styles.btnSecondary}
+                  onPress={() => router.push(`/vibe/${id}`)}
+                >
+                  <Text style={styles.btnSecondaryText}>Open public vibe page</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.btnSecondary} onPress={sharePublicVibes}>
+                  <Text style={styles.btnSecondaryText}>Share public vibe link</Text>
+                </TouchableOpacity>
+              </>
+            ) : null}
             <TouchableOpacity
               style={styles.btnSecondary}
               onPress={() =>

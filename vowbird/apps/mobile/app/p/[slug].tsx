@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Alert, ScrollView, Share, Text, TouchableOpacity, View } from "react-native";
+import { VIBE_EMOJIS, VIBE_LABELS } from "@vowbird/shared";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
 import { formatCategory, publicPactAppUrl, publicPactWebUrl } from "../../lib/share";
@@ -40,6 +41,32 @@ type PublicPactProfile = {
   leaderboardEnabled: boolean;
 };
 
+type PactVibeFeed = {
+  currentVibes: Array<{
+    id: string;
+    label?: string;
+    emoji?: string;
+    vibe: string;
+    user: { displayName: string };
+  }>;
+  vibeLeaderboard: Array<{
+    user: { displayName: string };
+    vibeCount: number;
+    latestEmoji: string;
+    latestLabel: string;
+  }>;
+  vibeLeaderboardEnabled: boolean;
+  vibes: Array<{
+    id: string;
+    label?: string;
+    emoji?: string;
+    vibe: string;
+    note: string | null;
+    createdAt: string;
+    user: { displayName: string };
+  }>;
+};
+
 export default function PublicPactScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { user } = useAuth();
@@ -57,6 +84,13 @@ export default function PublicPactScreen() {
       api<{ posts: Array<{ id: string; body: string; createdAt: string; author: { displayName: string } }> }>(
         `/public/pacts/${encodeURIComponent(slug!)}/posts`
       ),
+    enabled: !!slug,
+  });
+
+  const { data: vibeData } = useQuery({
+    queryKey: ["public-pact-vibes", slug],
+    queryFn: () =>
+      api<PactVibeFeed>(`/public/pacts/${encodeURIComponent(slug!)}/vibes`),
     enabled: !!slug,
   });
 
@@ -174,6 +208,77 @@ export default function PublicPactScreen() {
           ))}
         </View>
       )}
+
+      {vibeData &&
+        (vibeData.vibes.length > 0 || vibeData.currentVibes.length > 0) && (
+          <>
+            <Text style={{ fontWeight: "700", marginTop: 8, marginBottom: 4, color: colors.navy }}>
+              Live vibe checks
+            </Text>
+            <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 13 }}>
+              What members are up to right now.
+            </Text>
+            {vibeData.currentVibes.length > 0 && (
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                {vibeData.currentVibes.map((row) => {
+                  const emoji =
+                    row.emoji || VIBE_EMOJIS[row.vibe as keyof typeof VIBE_EMOJIS] || "✨";
+                  const label =
+                    row.label ||
+                    VIBE_LABELS[row.vibe as keyof typeof VIBE_LABELS] ||
+                    row.vibe;
+                  return (
+                    <View
+                      key={row.id}
+                      style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 20,
+                        backgroundColor: "rgba(212,168,83,0.12)",
+                      }}
+                    >
+                      <Text style={{ color: colors.navy, fontSize: 13 }}>
+                        {row.user.displayName} · {emoji} {label}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+            {vibeData.vibeLeaderboardEnabled && vibeData.vibeLeaderboard.length > 0 && (
+              <View style={styles.card}>
+                <Text style={{ fontWeight: "700", color: colors.navy, marginBottom: 8 }}>
+                  Most vibes this week
+                </Text>
+                {vibeData.vibeLeaderboard.slice(0, 5).map((row, i) => (
+                  <Text key={i} style={{ color: colors.navy, marginTop: 4 }}>
+                    #{i + 1} {row.user.displayName} · {row.latestEmoji} {row.latestLabel} ·{" "}
+                    {row.vibeCount}
+                  </Text>
+                ))}
+              </View>
+            )}
+            {vibeData.vibes.slice(0, 8).map((row) => {
+              const emoji =
+                row.emoji || VIBE_EMOJIS[row.vibe as keyof typeof VIBE_EMOJIS] || "✨";
+              const label =
+                row.label || VIBE_LABELS[row.vibe as keyof typeof VIBE_LABELS] || row.vibe;
+              return (
+                <View key={row.id} style={styles.card}>
+                  <Text style={{ fontWeight: "600", color: colors.navy }}>
+                    {row.user.displayName} · {emoji} {label}
+                  </Text>
+                  {row.note ? (
+                    <Text style={{ color: colors.muted, marginTop: 4 }}>{row.note}</Text>
+                  ) : null}
+                  <Text style={{ color: colors.muted, fontSize: 11, marginTop: 6 }}>
+                    {new Date(row.createdAt).toLocaleString()}
+                  </Text>
+                </View>
+              );
+            })}
+          </>
+        )}
 
       <Text style={{ fontWeight: "700", marginTop: 8, marginBottom: 8, color: colors.navy }}>
         Recent posts

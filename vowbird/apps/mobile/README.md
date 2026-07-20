@@ -47,9 +47,10 @@ Example: `http://192.168.1.42:4000`
 
 - Onboarding, register, login
 - Home dashboard, vows, check-in flow
-- Partner matching, match detail
+- Partner matching, match detail (incl. public vibe settings + share)
+- Public vibe duo (`/vibe/[id]`), Explore (pacts + vibe duos)
 - Letters inbox & compose
-- Pact discovery, detail, room feed
+- Pact discovery/detail/room feed (incl. vibe leaderboard toggle, public pact vibes)
 - Profile, report/block
 
 ## EAS builds

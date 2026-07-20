@@ -15,9 +15,9 @@ Vibe Check is a lightweight activity status layer on top of existing partner mat
 
 | Feature | Details |
 |---------|---------|
-| **Public duo vibes** | Either partner can turn on `vibesPublic`. Anyone can view `/vibe/[matchId]` and Explore lists the duo. |
+| **Public duo vibes** | Either partner can turn on `vibesPublic`. Anyone can view `/vibe/[matchId]` (web + mobile) and Explore lists the duo. |
 | **Vibe leaderboard** | Optional “Most vibes this week” on matches, pacts, and public pages (`vibeLeaderboardEnabled`). |
-| **Public pact vibes** | PUBLIC pacts expose live vibes on `/p/[slug]` via `GET /public/pacts/:slug/vibes`. |
+| **Public pact vibes** | PUBLIC pacts expose live vibes on `/p/[slug]` via `GET /public/pacts/:slug/vibes` (web + mobile). |
 
 Defaults stay private: `vibesPublic=false`, vibe leaderboards `true`.
 

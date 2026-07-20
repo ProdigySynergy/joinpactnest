@@ -19,6 +19,17 @@ type PublicPactSummary = {
   noJudgementZone: boolean;
 };
 
+type PublicVibeDuo = {
+  id: string;
+  vowTitle: string;
+  partners: Array<{ displayName: string }>;
+  latestVibe: {
+    label: string;
+    note: string | null;
+    user: { displayName: string };
+  } | null;
+};
+
 export default function DiscoverPactsScreen() {
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -26,6 +37,11 @@ export default function DiscoverPactsScreen() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["public-pacts"],
     queryFn: () => api<{ pacts: PublicPactSummary[] }>("/public/pacts"),
+  });
+
+  const { data: vibeDuos } = useQuery({
+    queryKey: ["public-vibe-duos"],
+    queryFn: () => api<{ matches: PublicVibeDuo[] }>("/public/vibes/matches"),
   });
 
   const filtered = useMemo(() => {
@@ -41,21 +57,72 @@ export default function DiscoverPactsScreen() {
     });
   }, [data?.pacts, q, category]);
 
+  const filteredDuos = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    return (vibeDuos?.matches || []).filter((d) => {
+      if (!query) return true;
+      const names = d.partners.map((p) => p.displayName).join(" ").toLowerCase();
+      return names.includes(query) || d.vowTitle.toLowerCase().includes(query);
+    });
+  }, [vibeDuos?.matches, q]);
+
   return (
     <ScrollView style={styles.screen} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>Explore</Text>
       <Text style={styles.subtitle}>
-        Public accountability circles with live momentum. Tap to open the share page.
+        Public pacts and vibe duos with live momentum.
       </Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Search pacts…"
+        placeholder="Search pacts or vibe duos…"
         value={q}
         onChangeText={setQ}
         autoCapitalize="none"
         autoCorrect={false}
       />
+
+      {(filteredDuos.length > 0 || (vibeDuos?.matches || []).length > 0) && (
+        <>
+          <Text style={{ fontWeight: "700", color: colors.navy, marginBottom: 8, fontSize: 17 }}>
+            Public vibe duos
+          </Text>
+          {filteredDuos.length === 0 && q.trim() ? (
+            <Text style={{ color: colors.muted, marginBottom: 16 }}>No vibe duos match.</Text>
+          ) : null}
+          {filteredDuos.map((duo) => (
+            <TouchableOpacity
+              key={duo.id}
+              style={[styles.card, { borderColor: "rgba(212,168,83,0.35)" }]}
+              onPress={() => router.push(`/vibe/${duo.id}`)}
+            >
+              <Text style={[styles.badge, { marginBottom: 6 }]}>✨ Vibe Check</Text>
+              <Text style={{ fontWeight: "700", fontSize: 16, color: colors.navy }}>
+                {duo.partners.map((p) => p.displayName).join(" & ")}
+              </Text>
+              <Text style={{ color: colors.muted, marginTop: 4 }}>{duo.vowTitle}</Text>
+              {duo.latestVibe ? (
+                <Text style={{ color: colors.navy, marginTop: 8, fontSize: 13 }}>
+                  Latest: {duo.latestVibe.user.displayName} · {duo.latestVibe.label}
+                  {duo.latestVibe.note ? ` — ${duo.latestVibe.note}` : ""}
+                </Text>
+              ) : null}
+            </TouchableOpacity>
+          ))}
+        </>
+      )}
+
+      <Text
+        style={{
+          fontWeight: "700",
+          color: colors.navy,
+          marginTop: 8,
+          marginBottom: 8,
+          fontSize: 17,
+        }}
+      >
+        Public pacts
+      </Text>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
         <TouchableOpacity
