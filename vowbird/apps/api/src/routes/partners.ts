@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { partnerRequestSchema, zodErrorToMessage } from "@vowbird/shared";
+import { formatDisplayName, partnerRequestSchema, zodErrorToMessage } from "@vowbird/shared";
 import { sanitizeUserForOthers } from "../lib/auth";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
@@ -82,7 +82,7 @@ export async function partnerRoutes(app: FastifyInstance) {
       await logNotification(
         targetUserId,
         "partnerInvite",
-        `${user.displayName} invited you to partner on “${vow.title}”`,
+        `${formatDisplayName(user)} invited you to partner on “${vow.title}”`,
         "/matches"
       );
 
@@ -200,7 +200,7 @@ export async function partnerRoutes(app: FastifyInstance) {
     await logNotification(
       req.userId,
       "partnerInviteAccepted",
-      `${accepter.displayName} accepted your partner invite`,
+      `${formatDisplayName(accepter)} accepted your partner invite`,
       "/matches"
     );
 
@@ -288,20 +288,22 @@ export async function partnerRoutes(app: FastifyInstance) {
     };
 
     const byUser = new Map<string, Candidate>();
+    const vowCategory = vow.category;
+    const vowFrequency = vow.frequencyType;
 
     async function loadCandidates(opts: {
       matchCategory: boolean;
       take: number;
     }) {
       const categoryFilter = opts.matchCategory
-        ? { category: vow.category }
-        : { category: { not: vow.category } };
+        ? { category: vowCategory }
+        : { category: { not: vowCategory } };
 
       const waitingPeers = await prisma.partnerRequest.findMany({
         where: {
           status: "WAITING",
           targetUserId: null,
-          frequencyType: vow.frequencyType,
+          frequencyType: vowFrequency,
           userId: { not: request.userId! },
           ...categoryFilter,
         },
@@ -313,7 +315,7 @@ export async function partnerRoutes(app: FastifyInstance) {
       const similarVowUsers = await prisma.vow.findMany({
         where: {
           status: "ACTIVE",
-          frequencyType: vow.frequencyType,
+          frequencyType: vowFrequency,
           userId: { not: request.userId! },
           ...categoryFilter,
         },
