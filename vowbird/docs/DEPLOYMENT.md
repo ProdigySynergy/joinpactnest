@@ -36,10 +36,22 @@ cp .env.example .env
 # Edit .env with production secrets
 
 pnpm install
+pnpm --filter @vowbird/shared build   # required before seed/API (shared has no dist until built)
 pnpm db:migrate:deploy
-pnpm db:seed
-pnpm build
+pnpm db:seed                          # also builds @vowbird/shared automatically
+pnpm build                            # bakes NEXT_PUBLIC_* from root `.env` into the web client
 ```
+
+> **Note:** `db:seed` imports `@vowbird/shared`. If you see `Cannot find module .../@vowbird/shared/dist/index.js`, run `pnpm --filter @vowbird/shared build` first (or just re-run `pnpm db:seed`, which builds shared for you).
+>
+> **Web API URL:** `NEXT_PUBLIC_API_URL` is compiled into the browser bundle. After changing it in root `.env`, you **must** rebuild web (`pnpm --filter @vowbird/web build`) and restart the process on port 3000. If Network tab still shows `localhost:4000`, the old build is still running.
+>
+> **Same-domain API (Apache):** if the public API is `https://yourdomain.com/api`, proxy `/api/` to the Fastify port and strip the prefix:
+> ```apache
+> ProxyPass        /api/ http://127.0.0.1:4000/
+> ProxyPassReverse /api/ http://127.0.0.1:4000/
+> ```
+> Then `curl https://yourdomain.com/api/health` must return JSON (not a Next.js 404 page).
 
 ## 3. Uploads directory
 
