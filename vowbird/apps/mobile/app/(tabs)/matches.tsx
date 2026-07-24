@@ -13,8 +13,8 @@ type Candidate = {
     displayName: string;
     tagline?: string | null;
   };
-  source: "queue" | "similar_vow";
-  theirVow: { id: string; title: string };
+  source: "queue" | "similar_vow" | "other_category";
+  theirVow: { id: string; title: string; category?: string };
   alreadyInvited: boolean;
 };
 
@@ -48,6 +48,18 @@ export default function MatchesTab() {
       }>("/partner-requests/me"),
   });
 
+  const { data: discover } = useQuery({
+    queryKey: ["partners-discover", vowId],
+    queryFn: () =>
+      api<{
+        candidates: Candidate[];
+        vowHasPartner: boolean;
+        usedOtherCategories?: boolean;
+      }>(`/partners/discover?vowId=${encodeURIComponent(vowId)}`),
+    enabled: Boolean(vowId),
+    refetchInterval: 30_000,
+  });
+
   const { data: incoming } = useQuery({
     queryKey: ["partner-requests-incoming"],
     queryFn: () =>
@@ -59,6 +71,7 @@ export default function MatchesTab() {
           fromUser: { id: string; username: string; displayName: string; tagline?: string | null };
         }>;
       }>("/partner-requests/incoming"),
+    refetchInterval: 30_000,
   });
 
   const { data: matches } = useQuery({
@@ -72,15 +85,6 @@ export default function MatchesTab() {
           vow: { title: string };
         }>;
       }>("/matches/me"),
-  });
-
-  const { data: discover } = useQuery({
-    queryKey: ["partners-discover", vowId],
-    queryFn: () =>
-      api<{ candidates: Candidate[]; vowHasPartner: boolean }>(
-        `/partners/discover?vowId=${encodeURIComponent(vowId)}`
-      ),
-    enabled: Boolean(vowId),
   });
 
   async function requestAutoMatch() {
@@ -120,7 +124,7 @@ export default function MatchesTab() {
 
   async function acceptInvite(id: string) {
     try {
-      await api(`/partner-requests/${id}/accept`, { method: "POST" });
+      await api(`/partner-requests/${id}/accept`, { method: "POST", body: "{}" });
       qc.invalidateQueries({ queryKey: ["partner-requests-incoming"] });
       qc.invalidateQueries({ queryKey: ["matches"] });
       Alert.alert("Partner invite accepted");
@@ -130,14 +134,22 @@ export default function MatchesTab() {
   }
 
   async function declineInvite(id: string) {
-    await api(`/partner-requests/${id}/decline`, { method: "POST" });
-    qc.invalidateQueries({ queryKey: ["partner-requests-incoming"] });
+    try {
+      await api(`/partner-requests/${id}/decline`, { method: "POST", body: "{}" });
+      qc.invalidateQueries({ queryKey: ["partner-requests-incoming"] });
+    } catch (e) {
+      Alert.alert("Error", (e as Error).message);
+    }
   }
 
   async function cancelRequest(id: string) {
-    await api(`/partner-requests/${id}/cancel`, { method: "POST" });
-    qc.invalidateQueries({ queryKey: ["partner-requests"] });
-    qc.invalidateQueries({ queryKey: ["partners-discover", vowId] });
+    try {
+      await api(`/partner-requests/${id}/cancel`, { method: "POST", body: "{}" });
+      qc.invalidateQueries({ queryKey: ["partner-requests"] });
+      qc.invalidateQueries({ queryKey: ["partners-discover", vowId] });
+    } catch (e) {
+      Alert.alert("Error", (e as Error).message);
+    }
   }
 
   const activeVows = vows?.vows.filter((v) => v.status === "ACTIVE") || [];
@@ -229,6 +241,11 @@ export default function MatchesTab() {
           <Text style={{ fontWeight: "700", marginTop: 24, marginBottom: 8, color: colors.navy }}>
             Discover
           </Text>
+          {discover?.usedOtherCategories ? (
+            <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 13 }}>
+              No one in your category — showing other categories.
+            </Text>
+          ) : null}
           {(discover?.candidates || []).length === 0 && (
             <Text style={{ color: colors.muted }}>No candidates yet. Try the auto-match queue.</Text>
           )}
@@ -239,7 +256,12 @@ export default function MatchesTab() {
                 <Text style={{ color: colors.muted, marginTop: 4 }}>{c.user.tagline}</Text>
               ) : null}
               <Text style={{ color: colors.muted, marginTop: 4, fontSize: 12 }}>
-                {c.source === "queue" ? "In queue" : "Similar vow"} · {c.theirVow.title}
+                {c.source === "queue"
+                  ? "In queue"
+                  : c.source === "other_category"
+                    ? `Other category${c.theirVow.category ? ` · ${c.theirVow.category}` : ""}`
+                    : "Similar vow"}{" "}
+                · {c.theirVow.title}
               </Text>
               <TouchableOpacity
                 style={[styles.btnSecondary, { opacity: c.alreadyInvited ? 0.5 : 1 }]}

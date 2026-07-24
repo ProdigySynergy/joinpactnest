@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
+import { api } from "@/lib/api";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
@@ -12,12 +14,23 @@ const navLinks = [
   { href: "/messages", label: "Messages" },
   { href: "/letters", label: "Letters" },
   { href: "/pacts", label: "Pacts" },
+  { href: "/explore", label: "Explore" },
   { href: "/settings", label: "Settings" },
 ];
 
 export function NavBar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
+
+  const { data: incoming } = useQuery({
+    queryKey: ["partner-requests-incoming"],
+    queryFn: () =>
+      api<{ requests: Array<{ id: string }> }>("/partner-requests/incoming"),
+    enabled: !!user,
+    refetchInterval: 30_000,
+  });
+
+  const inviteCount = incoming?.requests.length ?? 0;
 
   if (!user) return null;
 
@@ -35,6 +48,11 @@ export function NavBar() {
               className={`text-sm ${pathname.startsWith(l.href) ? "text-gold" : "text-cream/80 hover:text-gold"}`}
             >
               {l.label}
+              {l.href === "/matches" && inviteCount > 0 ? (
+                <span className="ml-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-gold px-1.5 text-[10px] font-bold text-navy">
+                  {inviteCount}
+                </span>
+              ) : null}
             </Link>
           ))}
           {user.role === "ADMIN" && (

@@ -34,19 +34,33 @@ export default function PactsPage() {
       <NavBar />
       <main className="mx-auto max-w-4xl px-4 py-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold">Pacts</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Pacts</h1>
+            <p className="mt-1 text-sm text-navy/60">
+              Create a public pact for anyone to join, or browse what’s already live.
+            </p>
+          </div>
           <div className="flex gap-2">
             <Link href="/explore" className="btn-secondary">
-              Public explore
+              Browse public pacts
             </Link>
             <Link href="/pacts/new" className="btn-primary">
-              Create pact
+              Create public pact
             </Link>
           </div>
         </div>
 
         <h2 className="mb-3 font-semibold">Your pacts</h2>
         <div className="mb-8 space-y-3">
+          {(mine?.pacts || []).length === 0 && (
+            <p className="text-sm text-navy/50">
+              No pacts yet.{" "}
+              <Link href="/pacts/new" className="text-gold hover:underline">
+                Create one
+              </Link>{" "}
+              (choose Public to list it on Explore).
+            </p>
+          )}
           {(mine?.pacts || []).map((p) => (
             <Link key={p.id} href={`/pacts/${p.id}`} className="card block hover:border-gold">
               <h3 className="font-semibold">{p.title}</h3>
@@ -65,6 +79,14 @@ export default function PactsPage() {
 
         <h2 className="mb-3 font-semibold">Discover public pacts</h2>
         <div className="space-y-3">
+          {(publicPacts?.pacts || []).length === 0 && (
+            <p className="text-sm text-navy/50">
+              No public pacts yet.{" "}
+              <Link href="/explore" className="text-gold hover:underline">
+                Open Explore
+              </Link>
+            </p>
+          )}
           {(publicPacts?.pacts || []).map((p) => (
             <Link key={p.id} href={`/p/${p.slug}`} className="card block hover:border-gold">
               <h3 className="font-semibold">{p.title}</h3>

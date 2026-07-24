@@ -73,10 +73,15 @@ export default function NewPactPage() {
             value={form.privacy}
             onChange={(e) => setForm({ ...form, privacy: e.target.value })}
           >
-            <option value="PUBLIC">Public</option>
+            <option value="PUBLIC">Public — listed on Explore for anyone</option>
             <option value="INVITE_ONLY">Invite only</option>
             <option value="PRIVATE">Private circle</option>
           </select>
+          {form.privacy === "PUBLIC" && (
+            <p className="text-sm text-navy/60">
+              Public pacts appear on Explore and can be shared via /p/… links.
+            </p>
+          )}
           <label className="block space-y-1">
             <span className="text-sm font-medium text-navy/80">Start date</span>
             <input

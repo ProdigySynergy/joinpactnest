@@ -42,18 +42,18 @@ export default function PactersScreen() {
   });
 
   async function accept(id: string) {
-    await api(`/pacters/requests/${id}/accept`, { method: "POST" });
+    await api(`/pacters/requests/${id}/accept`, { method: "POST", body: "{}" });
     qc.invalidateQueries({ queryKey: ["pacter-requests"] });
     qc.invalidateQueries({ queryKey: ["pacters"] });
   }
 
   async function decline(id: string) {
-    await api(`/pacters/requests/${id}/decline`, { method: "POST" });
+    await api(`/pacters/requests/${id}/decline`, { method: "POST", body: "{}" });
     qc.invalidateQueries({ queryKey: ["pacter-requests"] });
   }
 
   async function cancel(id: string) {
-    await api(`/pacters/requests/${id}/cancel`, { method: "POST" });
+    await api(`/pacters/requests/${id}/cancel`, { method: "POST", body: "{}" });
     qc.invalidateQueries({ queryKey: ["pacter-requests"] });
   }
 

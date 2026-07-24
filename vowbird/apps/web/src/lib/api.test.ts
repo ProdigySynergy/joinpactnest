@@ -22,11 +22,27 @@ describe("api client", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: false,
+        statusText: "Unauthorized",
         json: async () => ({ error: "Unauthorized" }),
       })
     );
 
     await expect(api("/auth/me")).rejects.toThrow("Unauthorized");
+    vi.unstubAllGlobals();
+  });
+
+  it("omits Content-Type when body is empty (Fastify-safe POSTs)", async () => {
+    const { api } = await import("./api");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api("/partner-requests/x/accept", { method: "POST" });
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers["Content-Type"]).toBeUndefined();
     vi.unstubAllGlobals();
   });
 });

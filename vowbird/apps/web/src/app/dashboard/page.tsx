@@ -22,6 +22,21 @@ export default function DashboardPage() {
     queryFn: () => api<{ progress: Array<{ title: string; currentStreak: number; completionPercentage: number }> }>("/progress/me"),
   });
 
+  const { data: incoming } = useQuery({
+    queryKey: ["partner-requests-incoming"],
+    queryFn: () =>
+      api<{
+        requests: Array<{
+          id: string;
+          vow: { title: string };
+          fromUser: { displayName: string };
+        }>;
+      }>("/partner-requests/incoming"),
+    refetchInterval: 30_000,
+  });
+
+  const inviteCount = incoming?.requests.length ?? 0;
+
   return (
     <RequireAuth>
       <NavBar />
@@ -37,6 +52,23 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {inviteCount > 0 && (
+          <div className="card mb-6 border-gold/40 bg-gold/10">
+            <p className="font-semibold text-navy">
+              You have {inviteCount} partner invite{inviteCount === 1 ? "" : "s"} waiting
+            </p>
+            <ul className="mt-2 space-y-1 text-sm text-navy/70">
+              {incoming!.requests.slice(0, 3).map((r) => (
+                <li key={r.id}>
+                  {r.fromUser.displayName} · {r.vow.title}
+                </li>
+              ))}
+            </ul>
+            <Link href="/matches" className="mt-3 inline-block text-sm font-medium text-gold hover:underline">
+              Review on Partners →
+            </Link>
+          </div>
+        )}
         <div className="grid gap-6 md:grid-cols-3">
           <div className="card md:col-span-2">
             <h2 className="font-semibold">Active vows</h2>

@@ -4,6 +4,7 @@ import { sanitizeUserForOthers } from "../lib/auth";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
 import { canCreateMatch, runMatching, vowHasActivePartner } from "../services/matching";
+import { logNotification } from "../services/notifications";
 import { calculateVowProgress } from "../services/progress";
 import { areUsersBlocked, assertNotSuspended } from "../services/safety";
 
@@ -77,6 +78,12 @@ export async function partnerRoutes(app: FastifyInstance) {
           status: "PENDING",
         },
       });
+
+      await logNotification(
+        targetUserId,
+        "partnerInvite",
+        `${user.displayName} invited you to partner on “${vow.title}”`
+      );
 
       return reply.status(201).send({ partnerRequest });
     }
@@ -188,6 +195,13 @@ export async function partnerRoutes(app: FastifyInstance) {
       }),
     ]);
 
+    const accepter = await prisma.user.findUniqueOrThrow({ where: { id: request.userId! } });
+    await logNotification(
+      req.userId,
+      "partnerInviteAccepted",
+      `${accepter.displayName} accepted your partner invite`
+    );
+
     return { match };
   });
 
@@ -228,7 +242,7 @@ export async function partnerRoutes(app: FastifyInstance) {
     return result;
   });
 
-  /** Discover candidates for a vow: open-queue peers + people with a matching active vow. */
+  /** Discover candidates for a vow: same category first; if none, other categories. */
   app.get("/partners/discover", { preHandler: authenticate }, async (request, reply) => {
     const { vowId } = request.query as { vowId?: string };
     if (!vowId) return reply.status(400).send({ error: "vowId required" });
@@ -239,7 +253,7 @@ export async function partnerRoutes(app: FastifyInstance) {
     }
 
     if (await vowHasActivePartner(vow.id)) {
-      return { candidates: [], vowHasPartner: true };
+      return { candidates: [], vowHasPartner: true, usedOtherCategories: false };
     }
 
     const blocked = await prisma.block.findMany({
@@ -251,44 +265,6 @@ export async function partnerRoutes(app: FastifyInstance) {
       blocked
         .flatMap((b) => [b.blockerId, b.blockedUserId])
         .filter((id) => id !== request.userId)
-    );
-
-    const waitingPeers = await prisma.partnerRequest.findMany({
-      where: {
-        status: "WAITING",
-        targetUserId: null,
-        category: vow.category,
-        frequencyType: vow.frequencyType,
-        userId: { not: request.userId! },
-      },
-      include: { user: true, vow: true },
-      orderBy: { createdAt: "asc" },
-      take: 40,
-    });
-
-    const similarVowUsers = await prisma.vow.findMany({
-      where: {
-        status: "ACTIVE",
-        category: vow.category,
-        frequencyType: vow.frequencyType,
-        userId: { not: request.userId! },
-      },
-      include: { user: true },
-      orderBy: { createdAt: "desc" },
-      take: 40,
-    });
-
-    const candidateVowIds = [
-      ...waitingPeers.map((p) => p.vowId),
-      ...similarVowUsers.map((v) => v.id),
-    ];
-    const vowedWithPartner = new Set(
-      (
-        await prisma.partnerMatch.findMany({
-          where: { vowId: { in: candidateVowIds }, status: "ACTIVE" },
-          select: { vowId: true },
-        })
-      ).map((m) => m.vowId)
     );
 
     const pendingOutgoing = await prisma.partnerRequest.findMany({
@@ -304,39 +280,99 @@ export async function partnerRoutes(app: FastifyInstance) {
 
     type Candidate = {
       user: ReturnType<typeof sanitizeUserForOthers>;
-      source: "queue" | "similar_vow";
-      theirVow: { id: string; title: string };
+      source: "queue" | "similar_vow" | "other_category";
+      theirVow: { id: string; title: string; category: string };
       alreadyInvited: boolean;
     };
 
     const byUser = new Map<string, Candidate>();
 
-    for (const peer of waitingPeers) {
-      if (blockedIds.has(peer.userId) || peer.user.isSuspended) continue;
-      if (vowedWithPartner.has(peer.vowId)) continue;
-      byUser.set(peer.userId, {
-        user: sanitizeUserForOthers(peer.user),
-        source: "queue",
-        theirVow: { id: peer.vow.id, title: peer.vow.title },
-        alreadyInvited: pendingTargetIds.has(peer.userId),
+    async function loadCandidates(opts: {
+      matchCategory: boolean;
+      take: number;
+    }) {
+      const categoryFilter = opts.matchCategory
+        ? { category: vow.category }
+        : { category: { not: vow.category } };
+
+      const waitingPeers = await prisma.partnerRequest.findMany({
+        where: {
+          status: "WAITING",
+          targetUserId: null,
+          frequencyType: vow.frequencyType,
+          userId: { not: request.userId! },
+          ...categoryFilter,
+        },
+        include: { user: true, vow: true },
+        orderBy: { createdAt: "asc" },
+        take: opts.take,
       });
+
+      const similarVowUsers = await prisma.vow.findMany({
+        where: {
+          status: "ACTIVE",
+          frequencyType: vow.frequencyType,
+          userId: { not: request.userId! },
+          ...categoryFilter,
+        },
+        include: { user: true },
+        orderBy: { createdAt: "desc" },
+        take: opts.take,
+      });
+
+      const candidateVowIds = [
+        ...waitingPeers.map((p) => p.vowId),
+        ...similarVowUsers.map((v) => v.id),
+      ];
+      const vowedWithPartner = new Set(
+        (
+          await prisma.partnerMatch.findMany({
+            where: { vowId: { in: candidateVowIds }, status: "ACTIVE" },
+            select: { vowId: true },
+          })
+        ).map((m) => m.vowId)
+      );
+
+      for (const peer of waitingPeers) {
+        if (byUser.has(peer.userId)) continue;
+        if (blockedIds.has(peer.userId) || peer.user.isSuspended) continue;
+        if (vowedWithPartner.has(peer.vowId)) continue;
+        byUser.set(peer.userId, {
+          user: sanitizeUserForOthers(peer.user),
+          source: opts.matchCategory ? "queue" : "other_category",
+          theirVow: {
+            id: peer.vow.id,
+            title: peer.vow.title,
+            category: peer.vow.category,
+          },
+          alreadyInvited: pendingTargetIds.has(peer.userId),
+        });
+      }
+
+      for (const v of similarVowUsers) {
+        if (byUser.has(v.userId)) continue;
+        if (blockedIds.has(v.userId) || v.user.isSuspended) continue;
+        if (vowedWithPartner.has(v.id)) continue;
+        byUser.set(v.userId, {
+          user: sanitizeUserForOthers(v.user),
+          source: opts.matchCategory ? "similar_vow" : "other_category",
+          theirVow: { id: v.id, title: v.title, category: v.category },
+          alreadyInvited: pendingTargetIds.has(v.userId),
+        });
+      }
     }
 
-    for (const v of similarVowUsers) {
-      if (byUser.has(v.userId)) continue;
-      if (blockedIds.has(v.userId) || v.user.isSuspended) continue;
-      if (vowedWithPartner.has(v.id)) continue;
-      byUser.set(v.userId, {
-        user: sanitizeUserForOthers(v.user),
-        source: "similar_vow",
-        theirVow: { id: v.id, title: v.title },
-        alreadyInvited: pendingTargetIds.has(v.userId),
-      });
+    await loadCandidates({ matchCategory: true, take: 40 });
+    let usedOtherCategories = false;
+    if (byUser.size === 0) {
+      await loadCandidates({ matchCategory: false, take: 40 });
+      usedOtherCategories = byUser.size > 0;
     }
 
     return {
       candidates: Array.from(byUser.values()).slice(0, 30),
       vowHasPartner: false,
+      usedOtherCategories,
     };
   });
 

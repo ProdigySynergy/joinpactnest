@@ -17,8 +17,8 @@ type Candidate = {
     tagline?: string | null;
     bio?: string | null;
   };
-  source: "queue" | "similar_vow";
-  theirVow: { id: string; title: string };
+  source: "queue" | "similar_vow" | "other_category";
+  theirVow: { id: string; title: string; category?: string };
   alreadyInvited: boolean;
 };
 
@@ -79,9 +79,11 @@ function MatchesPageInner() {
   const { data: discover } = useQuery({
     queryKey: ["partners-discover", vowId],
     queryFn: () =>
-      api<{ candidates: Candidate[]; vowHasPartner: boolean }>(
-        `/partners/discover?vowId=${encodeURIComponent(vowId)}`
-      ),
+      api<{
+        candidates: Candidate[];
+        vowHasPartner: boolean;
+        usedOtherCategories?: boolean;
+      }>(`/partners/discover?vowId=${encodeURIComponent(vowId)}`),
     enabled: Boolean(vowId),
   });
 
@@ -125,7 +127,7 @@ function MatchesPageInner() {
   async function acceptInvite(id: string) {
     setMsg("");
     try {
-      await api(`/partner-requests/${id}/accept`, { method: "POST" });
+      await api(`/partner-requests/${id}/accept`, { method: "POST", body: "{}" });
       setMsg("Partner invite accepted.");
       qc.invalidateQueries({ queryKey: ["partner-requests-incoming"] });
       qc.invalidateQueries({ queryKey: ["matches"] });
@@ -135,14 +137,25 @@ function MatchesPageInner() {
   }
 
   async function declineInvite(id: string) {
-    await api(`/partner-requests/${id}/decline`, { method: "POST" });
-    qc.invalidateQueries({ queryKey: ["partner-requests-incoming"] });
+    setMsg("");
+    try {
+      await api(`/partner-requests/${id}/decline`, { method: "POST", body: "{}" });
+      setMsg("Invite declined.");
+      qc.invalidateQueries({ queryKey: ["partner-requests-incoming"] });
+    } catch (err) {
+      setMsg((err as Error).message);
+    }
   }
 
   async function cancelRequest(id: string) {
-    await api(`/partner-requests/${id}/cancel`, { method: "POST" });
-    qc.invalidateQueries({ queryKey: ["partner-requests"] });
-    qc.invalidateQueries({ queryKey: ["partners-discover", vowId] });
+    setMsg("");
+    try {
+      await api(`/partner-requests/${id}/cancel`, { method: "POST", body: "{}" });
+      qc.invalidateQueries({ queryKey: ["partner-requests"] });
+      qc.invalidateQueries({ queryKey: ["partners-discover", vowId] });
+    } catch (err) {
+      setMsg((err as Error).message);
+    }
   }
 
   const activeVows = vows?.vows.filter((v) => v.status === "ACTIVE") || [];
@@ -218,7 +231,9 @@ function MatchesPageInner() {
         <section className="card mb-8">
           <h2 className="font-semibold">Discover</h2>
           <p className="mt-1 text-sm text-navy/60">
-            People with a matching category &amp; frequency — invite someone directly.
+            {discover?.usedOtherCategories
+              ? "No one in your category right now — showing people from other categories."
+              : "People with a matching category & frequency — invite someone directly."}
           </p>
           <div className="mt-4 space-y-3">
             {(discover?.candidates || []).length === 0 && (
@@ -235,7 +250,12 @@ function MatchesPageInner() {
                   </Link>
                   {c.user.tagline && <p className="text-sm text-navy/60">{c.user.tagline}</p>}
                   <p className="mt-1 text-xs text-navy/45">
-                    {c.source === "queue" ? "In queue" : "Similar vow"} · {c.theirVow.title}
+                    {c.source === "queue"
+                      ? "In queue"
+                      : c.source === "other_category"
+                        ? `Other category${c.theirVow.category ? ` · ${c.theirVow.category}` : ""}`
+                        : "Similar vow"}{" "}
+                    · {c.theirVow.title}
                   </p>
                 </div>
                 <button
