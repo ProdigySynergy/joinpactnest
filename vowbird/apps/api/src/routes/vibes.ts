@@ -127,14 +127,14 @@ export async function vibeRoutes(app: FastifyInstance) {
         where: { id: data.partnerMatchId },
       });
       const partnerId = match.userAId === request.userId ? match.userBId : match.userAId;
-      await logNotification(partnerId, "partnerVibe", `Your partner's vibe: ${label}`);
+      await logNotification(partnerId, "partnerVibe", `Your partner's vibe: ${label}`, `/matches/${data.partnerMatchId}`);
     } else if (data.pactId) {
       const members = await prisma.pactMember.findMany({
         where: { pactId: data.pactId, leftAt: null, userId: { not: request.userId! } },
         take: 20,
       });
       for (const m of members) {
-        await logNotification(m.userId, "partnerVibe", `Pact vibe check: ${label}`);
+        await logNotification(m.userId, "partnerVibe", `Pact vibe check: ${label}`, `/pacts/${data.pactId}`);
       }
     }
 

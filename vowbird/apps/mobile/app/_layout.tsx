@@ -33,6 +33,7 @@ export default function RootLayout() {
           <Stack.Screen name="messages/[userId]" options={{ headerShown: true, title: "Chat" }} />
           <Stack.Screen name="u/[username]" options={{ headerShown: true, title: "Profile" }} />
           <Stack.Screen name="pacters" options={{ headerShown: true, title: "Pactered" }} />
+          <Stack.Screen name="notifications" options={{ headerShown: true, title: "Notifications" }} />
           <Stack.Screen name="settings" options={{ headerShown: true, title: "Settings" }} />
           <Stack.Screen name="report" options={{ headerShown: true, title: "Safety" }} />
         </Stack>

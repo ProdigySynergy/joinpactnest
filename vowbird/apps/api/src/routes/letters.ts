@@ -138,7 +138,7 @@ export async function letterRoutes(app: FastifyInstance) {
     });
 
     if (updated.recipientId) {
-      await logNotification(updated.recipientId, "partnerLetter", "You received a letter!");
+      await logNotification(updated.recipientId, "partnerLetter", "You received a letter!", "/letters");
     }
 
     return { letter: updated };

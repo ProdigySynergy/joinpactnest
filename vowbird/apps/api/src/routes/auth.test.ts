@@ -12,6 +12,14 @@ vi.mock("../lib/prisma", () => ({
     notificationPreference: {
       upsert: vi.fn().mockResolvedValue({}),
     },
+    inAppNotification: {
+      create: vi.fn().mockResolvedValue({ id: "n1" }),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
   },
 }));
 

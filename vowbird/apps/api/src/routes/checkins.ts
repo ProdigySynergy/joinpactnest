@@ -132,7 +132,7 @@ export async function checkInRoutes(app: FastifyInstance) {
         });
         for (const m of matches) {
           const partnerId = m.userAId === request.userId ? m.userBId : m.userAId;
-          await logNotification(partnerId, "partnerCheckedIn", "Your partner checked in!");
+          await logNotification(partnerId, "partnerCheckedIn", "Your partner checked in!", "/matches");
         }
       }
 

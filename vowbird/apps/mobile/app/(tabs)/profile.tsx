@@ -22,6 +22,9 @@ export default function ProfileScreen() {
       <TouchableOpacity style={styles.btnPrimary} onPress={() => router.push("/settings")}>
         <Text style={styles.btnPrimaryText}>Settings</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={styles.btnSecondary} onPress={() => router.push("/notifications")}>
+        <Text style={styles.btnSecondaryText}>Notifications</Text>
+      </TouchableOpacity>
       <TouchableOpacity style={styles.btnSecondary} onPress={() => router.push("/messages")}>
         <Text style={styles.btnSecondaryText}>Messages</Text>
       </TouchableOpacity>

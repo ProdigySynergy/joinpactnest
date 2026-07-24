@@ -27,6 +27,9 @@ export default function HomeScreen() {
           <Text style={styles.btnSecondaryText}>Check in</Text>
         </TouchableOpacity>
       </View>
+      <TouchableOpacity style={[styles.btnSecondary, { marginBottom: 8 }]} onPress={() => router.push("/notifications")}>
+        <Text style={styles.btnSecondaryText}>Notifications</Text>
+      </TouchableOpacity>
       <TouchableOpacity style={[styles.btnSecondary, { marginBottom: 16 }]} onPress={() => router.push("/messages")}>
         <Text style={styles.btnSecondaryText}>Messages</Text>
       </TouchableOpacity>

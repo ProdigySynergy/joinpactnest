@@ -117,3 +117,5 @@ Optional: `EXPO_PUBLIC_SITE_URL=https://vowbird.app` for share links.
 | API_PUBLIC_URL | https://api.vowbird.app |
 | CORS_ORIGIN | https://vowbird.app |
 | NEXT_PUBLIC_API_URL | https://api.vowbird.app |
+
+After pulling schema changes (e.g. in-app notifications), run `pnpm db:migrate:deploy` before restarting the API. See `docs/NOTIFICATIONS.md`.

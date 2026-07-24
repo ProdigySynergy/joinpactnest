@@ -82,7 +82,8 @@ export async function partnerRoutes(app: FastifyInstance) {
       await logNotification(
         targetUserId,
         "partnerInvite",
-        `${user.displayName} invited you to partner on “${vow.title}”`
+        `${user.displayName} invited you to partner on “${vow.title}”`,
+        "/matches"
       );
 
       return reply.status(201).send({ partnerRequest });
@@ -199,7 +200,8 @@ export async function partnerRoutes(app: FastifyInstance) {
     await logNotification(
       req.userId,
       "partnerInviteAccepted",
-      `${accepter.displayName} accepted your partner invite`
+      `${accepter.displayName} accepted your partner invite`,
+      "/matches"
     );
 
     return { match };
